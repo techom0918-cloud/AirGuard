@@ -1,0 +1,58 @@
+import { WeeklyInsight } from '../types';
+
+export const mockWeeklyInsights: WeeklyInsight[] = [
+  {
+    id: 'ins-1',
+    section: 'Weekly Summary',
+    headline: '5 Recorded Environmental Events This Week',
+    detail: 'Across the past 7 days of monitoring, AirGuard detected 5 instances where localized air metrics deviated notably from baseline conditions, alongside 2 inhalation device actuations.',
+    highlightStat: '5 Events',
+    severity: 'safe',
+    observedDateRange: 'Past 7 Days (Sep 9 – Sep 15)',
+  },
+  {
+    id: 'ins-2',
+    section: 'Environmental Pattern',
+    headline: 'Higher PM2.5 Levels Preceded Actuations',
+    detail: 'Elevated PM2.5 levels (>45 µg/m³) were observed in 80% of recorded alert events. Peak particulate density averaged 58 µg/m³ during weekday morning travel windows.',
+    highlightStat: '+46% Particulate Rise',
+    severity: 'caution',
+    observedDateRange: 'Consistent Pattern',
+  },
+  {
+    id: 'ins-3',
+    section: 'Risk Pattern',
+    headline: 'Rapid Incline Preceded 2 Warning Alerts',
+    detail: '2 events occurred during periods of rising particulate levels where concentration jumped more than 15 µg/m³ within a 15-minute sensor window, before stabilizing.',
+    highlightStat: '2 Incline Warnings',
+    severity: 'caution',
+    observedDateRange: 'Sep 13 & Sep 14',
+  },
+  {
+    id: 'ins-4',
+    section: 'Potential Pattern',
+    headline: 'Evening Commute Micro-Environments',
+    detail: 'Several higher-risk observations clustered during evening outdoor activity between 5:30 PM and 7:00 PM along high-traffic corridors with vehicle and construction emissions.',
+    highlightStat: 'Evening Peak Zone',
+    severity: 'warning',
+    observedDateRange: 'Weekday Commute Corridors',
+  },
+  {
+    id: 'ins-5',
+    section: 'Notable Changes',
+    headline: 'Indoor Home Baseline Improved by 18%',
+    detail: 'Home environment particulate counts averaged 14 µg/m³ this week compared to 17 µg/m³ last week, demonstrating effective indoor HEPA air filtration stability.',
+    highlightStat: '-18% Indoor PM2.5',
+    severity: 'safe',
+    observedDateRange: 'Home Micro-zone',
+  },
+  {
+    id: 'ins-6',
+    section: 'Recommended Questions for Doctor',
+    headline: 'Suggested Discussion Points for Clinical Review',
+    detail: 'Consider asking your physician whether pre-exposure preventive action is suitable when commuting through urban corridors with particulate concentrations consistently exceeding 50 µg/m³.',
+    highlightStat: '3 Discussion Prompts',
+    severity: 'safe',
+    observedDateRange: 'Upcoming Clinical Consult',
+  },
+];

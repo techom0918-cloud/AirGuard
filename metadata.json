@@ -1,0 +1,6 @@
+{
+  "name": "AirGuard — Proactive Smart Inhaler",
+  "description": "A proactive smart inhaler and personal environmental risk guardian.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
