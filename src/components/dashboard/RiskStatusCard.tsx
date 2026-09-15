@@ -95,7 +95,7 @@ export const RiskStatusCard: React.FC<RiskStatusCardProps> = ({
 
             <span className="text-xs font-medium text-slate-400 hidden sm:inline">•</span>
             <span className="text-xs font-medium text-slate-500 hidden sm:inline">
-              ESP32 Sensor Array Active
+              Environmental Risk Assessment
             </span>
           </div>
 

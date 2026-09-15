@@ -92,20 +92,20 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
   };
 
   const handleManualRefresh = async () => {
-    setActionNotice('Querying ESP32 I2C sensor bus...');
+    setActionNotice('Refreshing sensor observations...');
     await environmentService.getLatestSnapshot();
     setTimeout(() => {
-      setActionNotice('Sensor values synchronized at 1 Hz.');
+      setActionNotice('Sensor values updated.');
       setTimeout(() => setActionNotice(null), 2500);
     }, 400);
   };
 
   const handleSimulateInhalation = async () => {
     setIsSimulatingActuation(true);
-    setActionNotice('Differential flow sensor triggered! Recording MDI actuation...');
+    setActionNotice('Recording inhaler actuation...');
     setTimeout(async () => {
       setIsSimulatingActuation(false);
-      setActionNotice('Inhalation actuation timestamp logged. Sensor snapshot linked.');
+      setActionNotice('Inhalation actuation timestamp logged with environmental telemetry.');
       const evts = await eventService.getEvents();
       setEvents(evts);
       setTimeout(() => setActionNotice(null), 3000);
@@ -163,36 +163,36 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
             <span className="text-xs font-bold text-[#0A6847] uppercase tracking-wider">
               Personal Environmental Risk Guardian
             </span>
-            <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-[#0A6847]">
-              ESP32-AG-8849
+            <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+              {device.deviceId}
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-['Space_Grotesk'] mt-0.5">
-            Active Airway Guardian Status
+            Airway Guardian Environment
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 font-normal mt-0.5">
-            Continuous micro-environmental air sampling and predictive airway trigger evaluation.
+            Micro-environmental air sampling and personal respiratory trigger evaluation.
           </p>
         </div>
 
-        {/* Triple Connection Status Pill (Device, Network, Data) */}
+        {/* Triple Connection Status Pill (Device, App, Data) */}
         <div className="flex items-center gap-2 flex-wrap text-xs font-semibold">
           {/* Device */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200">
-            <Radio className="w-3.5 h-3.5 text-[#0A6847] animate-pulse" />
-            <span>Device: BLE Connected</span>
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border ${device.connected ? 'bg-emerald-50 text-emerald-900 border-emerald-200' : 'bg-slate-50 text-slate-700 border-slate-200'}`}>
+            <Radio className={`w-3.5 h-3.5 ${device.connected ? 'text-[#0A6847]' : 'text-slate-400'}`} />
+            <span>{device.connected ? 'Device: Connected' : 'Device: Waiting for connection'}</span>
           </div>
 
-          {/* Network */}
+          {/* App Status */}
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 text-slate-700 border border-slate-200">
-            <Wifi className="w-3.5 h-3.5 text-slate-500" />
-            <span>Network: Online (Wi-Fi)</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span>App: Online</span>
           </div>
 
           {/* Data stream */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-            <span>Data: LIVE (1 Hz)</span>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 text-slate-700 border border-slate-200">
+            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            <span>Data: Simulation Mode</span>
           </div>
         </div>
       </div>
@@ -216,7 +216,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
           <div className="flex items-center gap-2">
             <Activity className="w-4 h-4 text-[#0A6847]" />
             <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-              Live Sensor Telemetry Array (6 Channels)
+              Sensor Telemetry Array (6 Channels)
             </h3>
           </div>
           <span className="text-xs text-slate-400 font-mono">
@@ -236,7 +236,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
             </div>
             <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100">
               <span className="text-emerald-700 font-semibold">Optimal</span>
-              <span className="font-mono text-slate-400">LIVE</span>
+              <span className="font-mono text-slate-400 text-[10px]">Active</span>
             </div>
           </div>
 
@@ -253,7 +253,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
               <span className={snapshot.pm25.value > 35 ? 'text-amber-700 font-semibold' : 'text-emerald-700 font-semibold'}>
                 {snapshot.pm25.trend === 'rising' ? '↑ Rising' : '→ Stable'}
               </span>
-              <span className="font-mono text-emerald-600 font-bold">LIVE</span>
+              <span className="font-mono text-emerald-700 font-semibold text-[10px]">Active</span>
             </div>
           </div>
 
@@ -268,7 +268,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
             </div>
             <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100">
               <span className="text-slate-600 font-semibold">Normal</span>
-              <span className="font-mono text-slate-400">LIVE</span>
+              <span className="font-mono text-slate-400 text-[10px]">Active</span>
             </div>
           </div>
 
@@ -285,7 +285,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
               <span className={snapshot.voc.value > 200 ? 'text-amber-700 font-semibold' : 'text-emerald-700 font-semibold'}>
                 {snapshot.voc.status}
               </span>
-              <span className="font-mono text-emerald-600 font-bold">LIVE</span>
+              <span className="font-mono text-emerald-700 font-semibold text-[10px]">Active</span>
             </div>
           </div>
 
@@ -300,7 +300,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
             </div>
             <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100">
               <span className="text-emerald-700 font-semibold">Comfortable</span>
-              <span className="font-mono text-slate-400">LIVE</span>
+              <span className="font-mono text-slate-400 text-[10px]">Active</span>
             </div>
           </div>
 
@@ -315,7 +315,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
             </div>
             <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100">
               <span className="text-emerald-700 font-semibold">Airway Safe</span>
-              <span className="font-mono text-slate-400">LIVE</span>
+              <span className="font-mono text-slate-400 text-[10px]">Active</span>
             </div>
           </div>
         </div>
@@ -445,7 +445,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
             className="px-4 py-2.5 rounded-xl font-bold text-white bg-[#0A6847] hover:bg-[#085338] shadow-xs flex items-center gap-2 text-xs sm:text-sm transition-all cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
-            <span>{isSimulatingActuation ? 'Logging Differential Flow...' : 'Simulate Inhalation Event'}</span>
+            <span>{isSimulatingActuation ? 'Logging Actuation...' : 'Log Inhaler Actuation'}</span>
           </button>
           <button
             type="button"

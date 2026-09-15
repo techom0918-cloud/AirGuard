@@ -101,63 +101,23 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Right: Quick Telemetry & Status Badges */}
+        {/* Right: Telemetry & App Status */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Quick Scenario Selector for Hackathon Presentation */}
-          {onSimulateRisk && (
-            <div className="hidden lg:flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs">
-              <span className="text-[11px] font-medium text-slate-500 px-2 flex items-center gap-1">
-                <SlidersHorizontal className="w-3 h-3" /> Demo:
-              </span>
-              <button
-                type="button"
-                onClick={() => onSimulateRisk('low')}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-colors cursor-pointer ${
-                  riskLevel === 'low'
-                    ? 'bg-emerald-600 text-white'
-                    : 'text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                Safe (Low)
-              </button>
-              <button
-                type="button"
-                onClick={() => onSimulateRisk('moderate')}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-colors cursor-pointer ${
-                  riskLevel === 'moderate'
-                    ? 'bg-amber-500 text-white'
-                    : 'text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                Rising (Mod)
-              </button>
-              <button
-                type="button"
-                onClick={() => onSimulateRisk('high')}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-colors cursor-pointer ${
-                  riskLevel === 'high'
-                    ? 'bg-red-600 text-white'
-                    : 'text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                High Risk
-              </button>
-            </div>
-          )}
-
-          {/* Sync indicator */}
+          {/* Status indicator */}
           <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/80">
-            <StatusIndicator status="online" size="sm" pulse />
-            <span className="hidden md:inline font-medium">Sync:</span>
-            <span className="font-semibold text-slate-700">{lastUpdated}</span>
+            <StatusIndicator status="online" size="sm" pulse={false} />
+            <span className="hidden md:inline font-medium">App:</span>
+            <span className="font-semibold text-slate-700">Online</span>
+            <span className="text-slate-300 hidden sm:inline">•</span>
+            <span className="text-slate-400 font-mono text-[11px] hidden sm:inline">{lastUpdated}</span>
             {onRefresh && (
               <button
                 type="button"
                 onClick={onRefresh}
                 disabled={isRefreshing}
                 className="ml-1 text-slate-400 hover:text-slate-700 disabled:opacity-50 cursor-pointer"
-                title="Refresh sensor stream"
-                aria-label="Refresh sensor stream"
+                title="Refresh observations"
+                aria-label="Refresh observations"
               >
                 <RotateCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-emerald-600' : ''}`} />
               </button>

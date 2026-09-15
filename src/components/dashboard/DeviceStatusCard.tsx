@@ -52,7 +52,7 @@ export const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
             <div className="flex items-center gap-1.5 mt-1">
               <StatusIndicator status={device.connected ? 'safe' : 'offline'} size="sm" />
               <span className="text-xs sm:text-sm font-bold text-slate-800">
-                {device.connected ? 'Connected' : 'Disconnected'}
+                {device.connected ? 'Connected' : 'Waiting for device'}
               </span>
             </div>
           </div>
@@ -63,9 +63,9 @@ export const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
               ESP32 Controller
             </span>
             <div className="flex items-center gap-1.5 mt-1">
-              <Cpu className="w-3.5 h-3.5 text-emerald-600" />
+              <Cpu className={`w-3.5 h-3.5 ${device.esp32Connected ? 'text-emerald-600' : 'text-slate-400'}`} />
               <span className="text-xs sm:text-sm font-bold text-slate-800">
-                {device.esp32Connected ? 'Connected' : 'Offline'}
+                {device.esp32Connected ? 'Connected' : 'Standby / Unpaired'}
               </span>
             </div>
           </div>
@@ -76,9 +76,9 @@ export const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
               Sensors Active
             </span>
             <div className="flex items-center gap-1.5 mt-1">
-              <CheckCircle2 className="w-3.5 h-3.5 text-[#0A6847]" />
+              <CheckCircle2 className={`w-3.5 h-3.5 ${device.connected ? 'text-[#0A6847]' : 'text-slate-400'}`} />
               <span className="text-xs sm:text-sm font-bold text-slate-800">
-                {device.activeSensorsCount}/{device.totalSensorsCount} Active
+                {device.connected ? `${device.activeSensorsCount}/${device.totalSensorsCount} Active` : 'Standby'}
               </span>
             </div>
           </div>
@@ -89,9 +89,9 @@ export const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
               Battery Level
             </span>
             <div className="flex items-center gap-1.5 mt-1">
-              <Battery className="w-3.5 h-3.5 text-emerald-600" />
+              <Battery className={`w-3.5 h-3.5 ${device.connected ? 'text-emerald-600' : 'text-slate-400'}`} />
               <span className="text-xs sm:text-sm font-bold text-slate-800">
-                {device.batteryLevel}%
+                {device.connected ? `${device.batteryLevel}%` : 'Standby'}
               </span>
             </div>
           </div>
@@ -101,10 +101,10 @@ export const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
         <div className="flex items-center justify-between text-xs text-slate-500 px-1 py-1">
           <span className="flex items-center gap-1.5">
             <Clock className="w-3 h-3 text-slate-400" />
-            Last Sync: <strong className="text-slate-700 font-semibold">{device.lastSyncSecondsAgo} sec ago</strong>
+            Last Sync: <strong className="text-slate-700 font-semibold">{device.connected ? `${device.lastSyncSecondsAgo} sec ago` : 'Awaiting link'}</strong>
           </span>
           <span className="text-slate-400 text-[11px] font-medium">
-            BLE & WiFi Gateway
+            BLE Interface
           </span>
         </div>
       </div>

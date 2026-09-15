@@ -17,6 +17,7 @@ import {
   Settings,
   LogOut,
   Globe,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { RiskLevel } from '../../types';
 import { StatusIndicator } from '../common/StatusIndicator';
@@ -29,14 +30,16 @@ interface SidebarProps {
   isDeviceConnected?: boolean;
   onSimulateRisk?: (level: RiskLevel) => void;
   onCloseMobile?: () => void;
+  onOpenDevSimulator?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   currentRiskLevel,
-  batteryLevel = 78,
-  isDeviceConnected = true,
+  batteryLevel = 0,
+  isDeviceConnected = false,
   onSimulateRisk,
   onCloseMobile,
+  onOpenDevSimulator,
 }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -56,88 +59,93 @@ export const Sidebar: React.FC<SidebarProps> = ({
       to: '/app/dashboard',
       label: 'Dashboard',
       icon: LayoutDashboard,
-      badge: 'Live',
+      badge: undefined,
     },
     {
       to: '/app/alerts',
-      label: 'Risk Alerts',
+      label: 'Alerts',
       icon: Bell,
-      badge: unreadAlerts > 0 ? `${unreadAlerts}` : undefined,
-      badgeVariant: 'amber',
+      badge: unreadAlerts > 0 ? unreadAlerts : undefined,
     },
     {
       to: '/app/history',
       label: 'Event History',
       icon: History,
+      badge: undefined,
     },
     {
       to: '/app/analytics',
       label: 'Analytics',
       icon: BarChart3,
+      badge: undefined,
     },
     {
       to: '/app/map',
       label: 'Trigger Map',
       icon: MapPin,
+      badge: undefined,
     },
     {
       to: '/app/insights',
       label: 'AI Insights',
       icon: Sparkles,
-      badge: 'Edge',
+      badge: undefined,
+    },
+    {
+      to: '/app/device',
+      label: 'Device Status',
+      icon: Radio,
+      badge: undefined,
     },
     {
       to: '/app/doctor-share',
       label: 'Doctor Share',
       icon: Share2,
+      badge: undefined,
     },
     {
-      to: '/app/device',
-      label: 'ESP32 Device',
-      icon: Radio,
+      to: '/app/settings',
+      label: 'Settings',
+      icon: Settings,
+      badge: undefined,
     },
   ];
 
   return (
-    <aside
-      id="main-sidebar"
-      className="w-64 h-full flex flex-col justify-between bg-white border-r border-slate-200 select-none overflow-y-auto"
-    >
+    <aside className="w-64 h-screen bg-white border-r border-slate-200/80 flex flex-col justify-between shrink-0 select-none">
       {/* Brand Header */}
-      <div>
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-[#0A6847] flex items-center justify-center text-white shadow-xs group-hover:bg-[#085338] transition-colors">
-              <Shield className="w-5 h-5 text-emerald-300 fill-emerald-300/30" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-slate-900 tracking-tight text-base font-['Space_Grotesk']">
-                  AIRGUARD
-                </span>
-                <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-                  ESP32
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500 font-medium leading-none mt-0.5">
-                Smart Inhaler System
-              </p>
-            </div>
-          </Link>
-        </div>
-
-        {/* Philosophy micro-pill */}
-        <div className="mx-4 mt-3 px-3 py-1.5 rounded-lg bg-emerald-50/80 border border-emerald-100/80">
-          <div className="flex items-center justify-between text-[11px]">
-            <span className="text-emerald-900 font-medium">Philosophy</span>
-            <span className="text-emerald-700 font-semibold flex items-center gap-1">
-              Reactive <span className="text-emerald-500">→</span> Predictive
-            </span>
+      <div className="p-4 sm:p-5 border-b border-slate-200/80">
+        <Link
+          to="/"
+          className="flex items-center gap-3 group"
+          onClick={onCloseMobile}
+        >
+          <div className="w-10 h-10 rounded-xl bg-[#0A6847] text-white flex items-center justify-center shadow-xs group-hover:bg-[#085338] transition-colors">
+            <Shield className="w-5 h-5 text-emerald-300" />
           </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-base tracking-tight text-slate-900 font-['Space_Grotesk']">
+                AIRGUARD
+              </span>
+              <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-50 text-[#0A6847] border border-emerald-200">
+                PROACTIVE
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 font-medium">
+              Smart Inhaler System
+            </p>
+          </div>
+        </Link>
+      </div>
+
+      {/* Main Navigation */}
+      <div className="flex-1 overflow-y-auto py-3 px-3 space-y-1">
+        <div className="px-3 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+          Monitoring & Diagnostics
         </div>
 
-        {/* Navigation items */}
-        <nav className="p-3 space-y-0.5 mt-2">
+        <nav className="space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -146,25 +154,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 to={item.to}
                 onClick={onCloseMobile}
                 className={({ isActive }) =>
-                  `group flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
+                  `flex items-center justify-between px-3 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-150 ${
                     isActive
-                      ? 'bg-[#ECFDF5] text-[#0A6847] font-semibold shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                      ? 'bg-[#0A6847] text-white shadow-xs font-bold'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                   }`
                 }
               >
-                <div className="flex items-center gap-2.5">
-                  <Icon className="w-4 h-4 transition-transform group-hover:scale-110" />
+                <div className="flex items-center gap-3">
+                  <Icon className="w-4 h-4 shrink-0" />
                   <span>{item.label}</span>
                 </div>
-                {item.badge && (
+                {item.badge !== undefined && (
                   <span
-                    className={`text-[10px] px-1.5 py-0.5 rounded-md font-semibold tracking-wide ${
-                      item.badgeVariant === 'amber'
-                        ? 'bg-amber-100 text-amber-800'
-                        : item.badge === 'Live'
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : 'bg-slate-100 text-slate-700'
+                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                      item.badge > 0
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-slate-200 text-slate-700'
                     }`}
                   >
                     {item.badge}
@@ -174,84 +180,44 @@ export const Sidebar: React.FC<SidebarProps> = ({
             );
           })}
         </nav>
-
-        {/* Simulation Controls for Evaluators */}
-        {onSimulateRisk && (
-          <div className="mx-3 mt-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200/90 text-xs">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                <Activity className="w-3 h-3 text-[#0A6847]" />
-                Demo Simulator
-              </span>
-              <span className="text-[10px] text-slate-400">Sensor</span>
-            </div>
-            <div className="grid grid-cols-3 gap-1">
-              <button
-                type="button"
-                onClick={() => onSimulateRisk('low')}
-                className={`py-1 rounded text-[11px] font-semibold transition-all cursor-pointer ${
-                  currentRiskLevel === 'low'
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-emerald-50'
-                }`}
-              >
-                Safe
-              </button>
-              <button
-                type="button"
-                onClick={() => onSimulateRisk('moderate')}
-                className={`py-1 rounded text-[11px] font-semibold transition-all cursor-pointer ${
-                  currentRiskLevel === 'moderate'
-                    ? 'bg-amber-500 text-white shadow-xs'
-                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-amber-50'
-                }`}
-              >
-                Rising
-              </button>
-              <button
-                type="button"
-                onClick={() => onSimulateRisk('high')}
-                className={`py-1 rounded text-[11px] font-semibold transition-all cursor-pointer ${
-                  currentRiskLevel === 'high'
-                    ? 'bg-red-600 text-white shadow-xs'
-                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-red-50'
-                }`}
-              >
-                High
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Bottom status & User profile */}
       <div className="p-3 border-t border-slate-200/80 space-y-2">
-        {/* Device Quick Status */}
+        {/* Device Quick Status (Honest Product State) */}
         <div className="p-2.5 rounded-xl bg-slate-50/90 border border-slate-200/70">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <StatusIndicator
-                status={isDeviceConnected ? 'online' : 'offline'}
+                status={isDeviceConnected ? 'safe' : 'offline'}
                 size="sm"
                 pulse={isDeviceConnected}
               />
-              <span className="text-xs font-semibold text-slate-800">ESP32 Inhaler</span>
+              <span className="text-xs font-semibold text-slate-800">Smart Inhaler</span>
             </div>
-            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">
-              BLE Linked
+            <span
+              className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                isDeviceConnected
+                  ? 'text-emerald-700 bg-emerald-50 border-emerald-100'
+                  : 'text-slate-500 bg-slate-100 border-slate-200'
+              }`}
+            >
+              {isDeviceConnected ? 'Paired' : 'Waiting for device'}
             </span>
           </div>
           <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-500 font-medium">
             <span className="flex items-center gap-1">
-              <Cpu className="w-3 h-3 text-slate-400" /> 4 Sensors
+              <Cpu className="w-3 h-3 text-slate-400" />
+              {isDeviceConnected ? 'Sensors Active' : 'Standby'}
             </span>
             <span className="flex items-center gap-1">
-              <BatteryCharging className="w-3 h-3 text-emerald-600" /> {batteryLevel}%
+              <BatteryCharging className={`w-3 h-3 ${isDeviceConnected ? 'text-emerald-600' : 'text-slate-400'}`} />
+              {isDeviceConnected ? `${batteryLevel}%` : 'No Link'}
             </span>
           </div>
         </div>
 
-        {/* User Card & Settings shortcuts */}
+        {/* User Card & Action Shortcuts */}
         <div className="pt-1 flex items-center justify-between px-1 text-xs">
           <Link
             to="/app/profile"
@@ -259,14 +225,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className="flex items-center gap-2 text-slate-700 hover:text-slate-900 min-w-0"
           >
             <div className="w-7 h-7 rounded-lg bg-emerald-100 text-[#0A6847] flex items-center justify-center font-bold text-xs shrink-0">
-              {user?.name?.[0] || 'R'}
+              {user?.name?.[0] || 'A'}
             </div>
             <span className="truncate font-semibold max-w-[90px]">
-              {user?.name || 'Rishabh'}
+              {user?.name || 'AirGuard User'}
             </span>
           </Link>
 
           <div className="flex items-center gap-1">
+            {onOpenDevSimulator && (
+              <button
+                type="button"
+                onClick={onOpenDevSimulator}
+                className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
+                title="Developer Testing Tools (Simulation)"
+                aria-label="Developer Testing Tools"
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+              </button>
+            )}
             <Link
               to="/app/settings"
               onClick={onCloseMobile}

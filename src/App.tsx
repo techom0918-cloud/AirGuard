@@ -32,6 +32,7 @@ import { SettingsPage } from './pages/app/SettingsPage';
 import { EnvironmentSnapshot, RiskLevel, DeviceStatus } from './types';
 import { environmentService } from './services/environmentService';
 import { deviceService } from './services/deviceService';
+import { DevSimulatorDrawer } from './components/common/DevSimulatorDrawer';
 import { X } from 'lucide-react';
 
 const AppLayoutShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -40,6 +41,7 @@ const AppLayoutShell: React.FC<{ children: React.ReactNode }> = ({ children }) =
   const [device, setDevice] = useState<DeviceStatus | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [isDevSimulatorOpen, setIsDevSimulatorOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const unsubEnv = environmentService.subscribeToSnapshot((snap) => {
@@ -146,6 +148,7 @@ const AppLayoutShell: React.FC<{ children: React.ReactNode }> = ({ children }) =
           batteryLevel={device?.batteryLevel}
           isDeviceConnected={device?.connected}
           onSimulateRisk={handleSimulateRisk}
+          onOpenDevSimulator={() => setIsDevSimulatorOpen(true)}
         />
       </div>
 
@@ -178,6 +181,10 @@ const AppLayoutShell: React.FC<{ children: React.ReactNode }> = ({ children }) =
             isDeviceConnected={device?.connected}
             onSimulateRisk={handleSimulateRisk}
             onCloseMobile={() => setIsMobileMenuOpen(false)}
+            onOpenDevSimulator={() => {
+              setIsMobileMenuOpen(false);
+              setIsDevSimulatorOpen(true);
+            }}
           />
         </div>
       </div>
@@ -199,6 +206,13 @@ const AppLayoutShell: React.FC<{ children: React.ReactNode }> = ({ children }) =
           {children}
         </main>
       </div>
+
+      {/* Developer Simulation Drawer */}
+      <DevSimulatorDrawer
+        isOpen={isDevSimulatorOpen}
+        onClose={() => setIsDevSimulatorOpen(false)}
+        currentRiskLevel={currentRisk}
+      />
 
       {/* Mobile Bottom Navigation */}
       <MobileNavigation />

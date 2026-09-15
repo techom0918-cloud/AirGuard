@@ -1,9 +1,9 @@
 import { DeviceStatus } from '../types';
-import { mockDeviceStatus } from '../data/mockDevice';
+import { mockDeviceStatus, mockConnectedDeviceStatus } from '../data/mockDevice';
 
 /**
- * Service abstraction for Hardware Device & ESP32 Telemetry.
- * Will map to Firebase Realtime Database node `/devices/{deviceId}` in production.
+ * Service abstraction for Hardware Device & Telemetry.
+ * Tracks truthful device connection states and supports developer simulation toggling.
  */
 
 let deviceState: DeviceStatus = { ...mockDeviceStatus };
@@ -24,28 +24,19 @@ export const deviceService = {
   },
 
   async runSensorDiagnostic(): Promise<{ success: boolean; message: string; timestamp: string }> {
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    deviceState = {
-      ...deviceState,
-      lastSyncSecondsAgo: 0,
-      activeSensorsCount: 4,
-      totalSensorsCount: 4,
-    };
-    listeners.forEach((listener) => listener({ ...deviceState }));
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    const isConn = deviceState.connected;
     return {
       success: true,
-      message: 'Self-test passed: Optical laser, metal-oxide VOC, SHT31, and barometric sensor arrays verified in normal operating spec.',
+      message: isConn
+        ? 'Diagnostic complete: Simulated optical laser, VOC, and barometric arrays active.'
+        : 'Diagnostic complete: Hardware bridge idle. Waiting for AirGuard inhaler sleeve to pair via Bluetooth.',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
     };
   },
 
   toggleConnection(connected: boolean): void {
-    deviceState = {
-      ...deviceState,
-      connected,
-      esp32Connected: connected,
-      bleState: connected ? 'connected' : 'disconnected',
-    };
+    deviceState = connected ? { ...mockConnectedDeviceStatus } : { ...mockDeviceStatus };
     listeners.forEach((listener) => listener({ ...deviceState }));
-  }
+  },
 };

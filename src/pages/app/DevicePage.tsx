@@ -106,16 +106,16 @@ export const DevicePage: React.FC = () => {
         <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs">
           <div className="flex items-center justify-between text-xs text-slate-400 font-semibold uppercase">
             <span>AirGuard Device</span>
-            <Bluetooth className="w-4 h-4 text-emerald-600" />
+            <Bluetooth className={`w-4 h-4 ${device.connected ? 'text-emerald-600' : 'text-slate-400'}`} />
           </div>
           <div className="mt-2 flex items-center gap-2">
-            <StatusIndicator status="online" size="md" pulse />
+            <StatusIndicator status={device.connected ? 'online' : 'offline'} size="md" pulse={device.connected} />
             <span className="text-xl font-bold text-slate-900 font-['Space_Grotesk']">
-              Connected
+              {device.connected ? 'Connected' : 'Waiting for device'}
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Low-energy Bluetooth sleeve paired
+            {device.connected ? 'Bluetooth LE connection active' : 'Awaiting Bluetooth device link'}
           </p>
         </div>
 
@@ -123,18 +123,20 @@ export const DevicePage: React.FC = () => {
         <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs">
           <div className="flex items-center justify-between text-xs text-slate-400 font-semibold uppercase">
             <span>Battery Status</span>
-            <Battery className="w-4 h-4 text-emerald-600" />
+            <Battery className={`w-4 h-4 ${device.connected ? 'text-emerald-600' : 'text-slate-400'}`} />
           </div>
           <div className="mt-2 flex items-baseline gap-1.5">
             <span className="text-2xl font-bold text-slate-900 font-['Space_Grotesk']">
-              {device.batteryLevel}%
+              {device.connected ? `${device.batteryLevel}%` : 'Standby'}
             </span>
-            <span className="text-xs text-emerald-700 font-semibold">~36 hrs active</span>
+            {device.connected && (
+              <span className="text-xs text-emerald-700 font-semibold">~36 hrs active</span>
+            )}
           </div>
           <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden">
             <div
-              className="bg-emerald-500 h-full rounded-full"
-              style={{ width: `${device.batteryLevel}%` }}
+              className={`h-full rounded-full ${device.connected ? 'bg-emerald-500' : 'bg-slate-300'}`}
+              style={{ width: `${device.connected ? device.batteryLevel : 0}%` }}
             />
           </div>
         </div>
@@ -150,8 +152,8 @@ export const DevicePage: React.FC = () => {
               {device.firmwareVersion}
             </span>
           </div>
-          <p className="text-xs text-emerald-700 font-medium mt-1">
-            Up to date • ESP-IDF v5.1.2
+          <p className="text-xs text-slate-500 font-medium mt-1">
+            {device.connected ? 'Up to date • ESP-IDF v5.1.2' : 'Hardware profile loaded'}
           </p>
         </div>
 
@@ -165,10 +167,12 @@ export const DevicePage: React.FC = () => {
             <span className="text-xl font-bold text-slate-900 font-['Space_Grotesk']">
               {device.connectionQuality}
             </span>
-            <span className="text-xs text-slate-400 font-mono">({device.rssi} dBm)</span>
+            {device.connected && (
+              <span className="text-xs text-slate-400 font-mono">({device.rssi} dBm)</span>
+            )}
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Last sync {device.lastSyncSecondsAgo} sec ago
+            {device.connected ? `Last sync ${device.lastSyncSecondsAgo} sec ago` : 'Awaiting device telemetry'}
           </p>
         </div>
       </div>
@@ -181,11 +185,11 @@ export const DevicePage: React.FC = () => {
               Onboard Sensor Array Verification
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Micro-sensor telemetry readings continuously monitored via hardware I2C/UART bus
+              Micro-sensor telemetry readings monitored via hardware I2C/UART bus
             </p>
           </div>
-          <Badge variant="green" size="md">
-            All 6 Subsystems Verified
+          <Badge variant={device.connected ? 'green' : 'amber'} size="md">
+            {device.connected ? 'All 6 Subsystems Verified' : 'Standby / Awaiting Device Link'}
           </Badge>
         </div>
 
@@ -196,8 +200,8 @@ export const DevicePage: React.FC = () => {
               className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/70 transition-colors"
             >
               <div className="flex items-start sm:items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-[#0A6847] flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${device.connected ? 'bg-emerald-50 text-[#0A6847]' : 'bg-slate-100 text-slate-400'}`}>
+                  <CheckCircle2 className={`w-5 h-5 ${device.connected ? 'text-emerald-600' : 'text-slate-400'}`} />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -220,11 +224,11 @@ export const DevicePage: React.FC = () => {
                     Telemetry Stream
                   </span>
                   <span className="text-xs sm:text-sm font-bold text-slate-800 font-['Space_Grotesk']">
-                    {sensor.latestReading}
+                    {device.connected ? sensor.latestReading : 'Standby'}
                   </span>
                 </div>
-                <Badge variant="green" size="sm">
-                  Active
+                <Badge variant={device.connected ? 'green' : 'neutral'} size="sm">
+                  {device.connected ? 'Active' : 'Standby'}
                 </Badge>
               </div>
             </div>
