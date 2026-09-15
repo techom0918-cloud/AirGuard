@@ -7,9 +7,9 @@ export const ProfilePage: React.FC = () => {
 
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [emergencyName, setEmergencyName] = useState(user?.emergencyContact?.name || 'Priya Shishodiya');
-  const [emergencyRelation, setEmergencyRelation] = useState(user?.emergencyContact?.relation || 'Spouse');
-  const [emergencyPhone, setEmergencyPhone] = useState(user?.emergencyContact?.phone || '+1 (415) 890-2134');
+  const [emergencyName, setEmergencyName] = useState(user?.emergencyContact?.name || 'Emergency Guardian');
+  const [emergencyRelation, setEmergencyRelation] = useState(user?.emergencyContact?.relation || 'Guardian');
+  const [emergencyPhone, setEmergencyPhone] = useState(user?.emergencyContact?.phone || '+1 (555) 019-2834');
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 

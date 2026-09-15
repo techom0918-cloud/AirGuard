@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Shield, Eye, EyeOff, Lock, Mail, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -8,15 +8,21 @@ import { PublicFooter } from '../../components/layout/PublicFooter';
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, isAuthenticated } = useAuth();
 
-  const [email, setEmail] = useState('rishabhshishodiya22@gmail.com');
-  const [password, setPassword] = useState('AirGuard@2026');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberSession, setRememberSession] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const from = (location.state as any)?.from?.pathname || '/app/dashboard';
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, navigate, from]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,13 +60,26 @@ export const LoginPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Quick Demo Credentials Banner for easy evaluator testing */}
-          <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl text-xs text-emerald-900 flex items-start gap-2">
-            <CheckCircle2 className="w-4 h-4 text-[#0A6847] shrink-0 mt-0.5" />
-            <div>
-              <span className="font-semibold block">Pre-filled Demo Credentials:</span>
-              <span className="text-emerald-800">Email: {email}</span>
+          {/* Quick Demo Credentials Helper for Developer Testing */}
+          <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl text-xs text-emerald-900 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-[#0A6847] shrink-0" />
+              <div>
+                <span className="font-semibold block">Development Demo Account:</span>
+                <span className="text-emerald-800 text-[11px]">demo@airguard.local</span>
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('demo@airguard.local');
+                setPassword('AirGuard@123');
+                setErrorMessage(null);
+              }}
+              className="px-2.5 py-1 text-[11px] font-bold text-[#0A6847] bg-emerald-100 hover:bg-emerald-200 rounded-lg transition-colors cursor-pointer shrink-0"
+            >
+              Fill Demo Credentials
+            </button>
           </div>
 
           {errorMessage && (

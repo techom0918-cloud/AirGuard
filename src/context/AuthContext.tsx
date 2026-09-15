@@ -16,10 +16,19 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [session, setSession] = useState<AuthSession>(authService.getSession());
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [session, setSession] = useState<AuthSession>({
+    user: null,
+    isAuthenticated: false,
+    token: null,
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    // Explicit session restoration on application startup
+    const activeSession = authService.restoreSession();
+    setSession(activeSession);
+    setIsLoading(false);
+
     const unsub = authService.subscribe((newSession) => {
       setSession(newSession);
     });
@@ -28,22 +37,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, pass: string, rememberMe = true) => {
     setIsLoading(true);
-    const res = await authService.login(email, pass, rememberMe);
-    setIsLoading(false);
-    return res;
+    try {
+      const res = await authService.login(email, pass, rememberMe);
+      return res;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const register = async (name: string, email: string, pass: string) => {
     setIsLoading(true);
-    const res = await authService.register(name, email, pass);
-    setIsLoading(false);
-    return res;
+    try {
+      const res = await authService.register(name, email, pass);
+      return res;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const logout = async () => {
     setIsLoading(true);
-    await authService.logout();
-    setIsLoading(false);
+    try {
+      await authService.logout();
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const updateProfile = async (data: Partial<User>) => {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   History,
@@ -38,8 +38,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSimulateRisk,
   onCloseMobile,
 }) => {
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [unreadAlerts, setUnreadAlerts] = useState<number>(2);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login', { replace: true });
+  };
 
   useEffect(() => {
     alertService.getUnreadCount().then(setUnreadAlerts);
@@ -278,7 +284,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </Link>
             <button
               type="button"
-              onClick={() => logout()}
+              onClick={handleLogout}
               className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
               title="Sign Out"
             >
