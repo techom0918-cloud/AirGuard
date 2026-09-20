@@ -5,12 +5,9 @@ import {
   CheckCircle, 
   Activity, 
   MapPin, 
-  Calendar, 
   Clock, 
-  Thermometer, 
-  Droplets,
-  ChevronDown,
-  ChevronUp
+  ChevronDown, 
+  ChevronUp 
 } from 'lucide-react';
 import { EnvironmentalEvent } from '../../types';
 import { Badge } from '../common/Badge';
@@ -45,36 +42,25 @@ export const EventCard: React.FC<EventCardProps> = ({
     }
   };
 
-  const getRiskBorder = (risk: string) => {
-    switch (risk) {
-      case 'high':
-        return 'border-l-4 border-l-red-500';
-      case 'moderate':
-        return 'border-l-4 border-l-amber-400';
-      default:
-        return 'border-l-4 border-l-emerald-500';
-    }
-  };
+  const displayEventType = event.eventType === 'Inhalation Event' ? 'Inhaler Actuation' : event.eventType;
 
   return (
     <div
       id={id || `event-${event.id}`}
-      className={`bg-white rounded-xl border border-slate-200/90 shadow-xs hover:border-slate-300 transition-all ${getRiskBorder(
-        event.riskLevel
-      )} ${className}`}
+      className={`bg-white rounded-2xl border border-slate-200/90 shadow-xs hover:border-slate-300 transition-all ${className}`}
     >
       <div className="p-4 sm:p-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Left: Type, Icon, and Timestamp */}
           <div className="flex items-start sm:items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
               {getEventIcon(event.eventType)}
             </div>
 
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h4 className="text-sm font-bold text-slate-900">
-                  {event.eventType}
+                <h4 className="text-sm font-bold text-slate-900 font-['Space_Grotesk']">
+                  {displayEventType}
                 </h4>
                 <Badge riskLevel={event.riskLevel} size="sm">
                   {event.riskLevel === 'low'
@@ -84,15 +70,15 @@ export const EventCard: React.FC<EventCardProps> = ({
                     : 'High Risk'}
                 </Badge>
                 {event.inhalationDetected && (
-                  <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                    Inhalation Logged
+                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    Inhaler Actuation Logged
                   </span>
                 )}
               </div>
 
               <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-500">
                 <span className="font-semibold text-slate-700 flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-slate-400" />
+                  <Clock className="w-3.5 h-3.5 text-slate-400" />
                   {event.timestamp}
                 </span>
                 <span>•</span>
@@ -101,7 +87,7 @@ export const EventCard: React.FC<EventCardProps> = ({
                   <>
                     <span>•</span>
                     <span className="flex items-center gap-1 text-slate-600 font-medium">
-                      <MapPin className="w-3 h-3 text-slate-400" />
+                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
                       {event.location.name}
                     </span>
                   </>
@@ -113,7 +99,7 @@ export const EventCard: React.FC<EventCardProps> = ({
           {/* Right: Key environmental readings and Expand toggle */}
           <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
             <div className="flex items-center gap-2 text-right">
-              <div className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200/80">
+              <div className="px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200/80">
                 <span className="text-[10px] text-slate-400 block uppercase font-medium leading-none">
                   PM2.5
                 </span>
@@ -122,7 +108,7 @@ export const EventCard: React.FC<EventCardProps> = ({
                 </span>
               </div>
 
-              <div className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200/80 hidden xs:block">
+              <div className="px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200/80">
                 <span className="text-[10px] text-slate-400 block uppercase font-medium leading-none">
                   VOC
                 </span>
@@ -136,7 +122,7 @@ export const EventCard: React.FC<EventCardProps> = ({
               <button
                 type="button"
                 onClick={() => onToggleExpand(event.id)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center"
                 aria-label={isExpanded ? 'Collapse event details' : 'Expand event details'}
               >
                 {isExpanded ? (
@@ -152,32 +138,32 @@ export const EventCard: React.FC<EventCardProps> = ({
         {/* Expandable detailed snapshot */}
         {isExpanded && (
           <div className="mt-4 pt-4 border-t border-slate-100 text-xs space-y-3">
-            {/* Sensor snapshot tiles */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
-                <span className="text-slate-400 block text-[10px]">PM10 Particulate</span>
-                <span className="font-bold text-slate-800">{event.pm10} µg/m³</span>
+            {/* Sensor snapshot tiles - Responsive 2/3/4 grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
+              <div className="p-2.5 bg-slate-50/80 rounded-xl border border-slate-200/70">
+                <span className="text-slate-400 block text-[10px] uppercase font-medium">PM10 Particulate</span>
+                <span className="font-extrabold text-slate-900 font-['Space_Grotesk'] text-sm mt-0.5 block">{event.pm10} µg/m³</span>
               </div>
-              <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
-                <span className="text-slate-400 block text-[10px]">Ambient Temp</span>
-                <span className="font-bold text-slate-800">{event.temperature}°C</span>
+              <div className="p-2.5 bg-slate-50/80 rounded-xl border border-slate-200/70">
+                <span className="text-slate-400 block text-[10px] uppercase font-medium">Ambient Temp</span>
+                <span className="font-extrabold text-slate-900 font-['Space_Grotesk'] text-sm mt-0.5 block">{event.temperature}°C</span>
               </div>
-              <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
-                <span className="text-slate-400 block text-[10px]">Humidity</span>
-                <span className="font-bold text-slate-800">{event.humidity}%</span>
+              <div className="p-2.5 bg-slate-50/80 rounded-xl border border-slate-200/70">
+                <span className="text-slate-400 block text-[10px] uppercase font-medium">Humidity</span>
+                <span className="font-extrabold text-slate-900 font-['Space_Grotesk'] text-sm mt-0.5 block">{event.humidity}%</span>
               </div>
-              <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
-                <span className="text-slate-400 block text-[10px]">Barometric Pressure</span>
-                <span className="font-bold text-slate-800">{event.pressure || 1013} hPa</span>
+              <div className="p-2.5 bg-slate-50/80 rounded-xl border border-slate-200/70 col-span-2 sm:col-span-1">
+                <span className="text-slate-400 block text-[10px] uppercase font-medium">Barometric Pressure</span>
+                <span className="font-extrabold text-slate-900 font-['Space_Grotesk'] text-sm mt-0.5 block">{event.pressure || 1013} hPa</span>
               </div>
             </div>
 
             {/* Environmental trend description */}
-            <div className="p-2.5 rounded-lg bg-emerald-50/60 border border-emerald-100 text-emerald-900">
-              <span className="font-semibold block text-[11px] mb-0.5">
+            <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-100 text-emerald-950">
+              <span className="font-semibold block text-[11px] mb-0.5 text-[#0A6847]">
                 Telemetry Trend: {event.environmentalTrend}
               </span>
-              <p className="text-slate-600 text-[11px] leading-relaxed">
+              <p className="text-slate-700 text-xs leading-relaxed">
                 {event.notes}
               </p>
             </div>

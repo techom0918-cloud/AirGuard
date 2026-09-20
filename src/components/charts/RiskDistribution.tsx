@@ -81,7 +81,7 @@ export const RiskDistribution: React.FC<RiskDistributionProps> = ({
               67%
             </span>
             <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-              Safe Zone
+              Nominal Zone
             </span>
           </div>
         </div>
@@ -89,12 +89,12 @@ export const RiskDistribution: React.FC<RiskDistributionProps> = ({
         {/* Legend pills */}
         <div className="grid grid-cols-3 gap-2 mt-2 pt-3 border-t border-slate-100 text-center">
           {data.map((item) => (
-            <div key={item.name} className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+            <div key={item.name} className="p-1.5 sm:p-2 rounded-xl bg-slate-50 border border-slate-100">
               <div className="flex items-center justify-center gap-1.5 mb-0.5">
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-                <span className="text-[11px] font-medium text-slate-500">{item.name}</span>
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                <span className="text-[10px] sm:text-[11px] font-medium text-slate-600 truncate">{item.name}</span>
               </div>
-              <span className="text-sm font-extrabold text-slate-800 font-['Space_Grotesk']">
+              <span className="text-xs sm:text-sm font-extrabold text-slate-800 font-['Space_Grotesk']">
                 {item.value} <span className="text-[10px] font-normal text-slate-400">({item.percentage}%)</span>
               </span>
             </div>

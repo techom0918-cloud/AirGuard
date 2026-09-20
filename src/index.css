@@ -36,3 +36,63 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94A3B8;
 }
+
+/* Print Styles for Clinical & Environmental Reports */
+@media print {
+  /* Hide application chrome and non-printable navigation */
+  header,
+  nav,
+  aside,
+  #main-header,
+  #mobile-nav,
+  .no-print,
+  [data-no-print] {
+    display: none !important;
+  }
+
+  /* Reset document canvas */
+  html, body {
+    background: #FFFFFF !important;
+    color: #0F172A !important;
+    font-size: 10pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: auto !important;
+  }
+
+  /* Expand main container to fill paper */
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    display: block !important;
+    max-width: 100% !important;
+  }
+
+  .min-h-screen {
+    min-height: auto !important;
+  }
+
+  /* Clinical report paper container resets */
+  #clinical-report-sheet {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Avoid awkward page cuts */
+  .report-section,
+  tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Ensure colors and table borders print reliably */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

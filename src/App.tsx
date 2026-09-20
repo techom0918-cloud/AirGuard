@@ -107,7 +107,7 @@ const AppLayoutShell: React.FC<{ children: React.ReactNode }> = ({ children }) =
     }
     if (pathname.includes('/device')) {
       return {
-        title: 'ESP32 Device & Sensor Diagnostics',
+        title: 'Device & Sensor Diagnostics',
         subtitle: 'Plantower PMSA003I, Sensirion SGP40, SHT31, and MDI sleeve status',
       };
     }
@@ -162,9 +162,8 @@ const AppLayoutShell: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
       {/* Mobile Slide-over Drawer */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-72 bg-white transform transition-transform duration-200 ease-in-out md:hidden shadow-2xl ${
-          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`fixed inset-y-0 left-0 z-50 w-72 bg-white transform transition-transform duration-200 ease-in-out md:hidden shadow-2xl ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
         <div className="h-full relative flex flex-col justify-between">
           <button
@@ -202,7 +201,7 @@ const AppLayoutShell: React.FC<{ children: React.ReactNode }> = ({ children }) =
           onSimulateRisk={handleSimulateRisk}
         />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto min-w-0">
           {children}
         </main>
       </div>

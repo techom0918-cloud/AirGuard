@@ -66,21 +66,21 @@ export const PM25Chart: React.FC<PM25ChartProps> = ({
   return (
     <div
       id={id}
-      className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs flex flex-col justify-between"
+      className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-6 shadow-xs flex flex-col justify-between w-full min-w-0"
     >
       {/* Header with Title and Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-        <div>
-          <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-            Environmental Telemetry Over Time
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 min-w-0">
+        <div className="min-w-0">
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight font-['Space_Grotesk']">
+            Environmental Telemetry Trend
           </h3>
           <p className="text-xs text-slate-500 font-normal mt-0.5">
-            Real-time ESP32 sensor history with automated safety baseline markers
+            Historical environmental observations with baseline caution reference markers
           </p>
         </div>
 
         {/* Timeframe pill selector */}
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl self-start sm:self-auto">
+        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl self-start sm:self-auto shrink-0">
           {(['1H', '6H', '24H'] as const).map((tf) => (
             <button
               key={tf}
@@ -99,7 +99,7 @@ export const PM25Chart: React.FC<PM25ChartProps> = ({
       </div>
 
       {/* Metric Switcher Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto py-3 no-scrollbar">
+      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto py-3 no-scrollbar w-full min-w-0">
         {[
           { key: 'pm25' as const, label: 'PM2.5 (Particulates)' },
           { key: 'voc' as const, label: 'VOC (Gases)' },
@@ -110,7 +110,7 @@ export const PM25Chart: React.FC<PM25ChartProps> = ({
             key={tab.key}
             type="button"
             onClick={() => setSelectedMetric(tab.key)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer border ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer border shrink-0 ${
               selectedMetric === tab.key
                 ? 'bg-slate-900 text-white border-slate-900'
                 : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
@@ -122,7 +122,7 @@ export const PM25Chart: React.FC<PM25ChartProps> = ({
       </div>
 
       {/* Chart Canvas */}
-      <div className="h-64 sm:h-72 w-full pt-2">
+      <div className="h-64 sm:h-72 w-full pt-2 min-w-0 overflow-hidden">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>

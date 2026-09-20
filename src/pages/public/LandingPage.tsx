@@ -95,7 +95,7 @@ export const LandingPage: React.FC = () => {
                     </span>
                   </div>
                   <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded-md">
-                    Live Telemetry
+                    Simulated Telemetry
                   </span>
                 </div>
 
@@ -104,27 +104,24 @@ export const LandingPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setActiveTab('stable')}
-                    className={`py-1.5 rounded-lg transition-all ${
-                      activeTab === 'stable' ? 'bg-white text-emerald-800 shadow-xs' : 'hover:text-slate-900'
-                    }`}
+                    className={`py-1.5 rounded-lg transition-all ${activeTab === 'stable' ? 'bg-white text-emerald-800 shadow-xs' : 'hover:text-slate-900'
+                      }`}
                   >
                     Stable Safe
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveTab('rising')}
-                    className={`py-1.5 rounded-lg transition-all ${
-                      activeTab === 'rising' ? 'bg-white text-amber-900 shadow-xs' : 'hover:text-slate-900'
-                    }`}
+                    className={`py-1.5 rounded-lg transition-all ${activeTab === 'rising' ? 'bg-white text-amber-900 shadow-xs' : 'hover:text-slate-900'
+                      }`}
                   >
                     Risk Rising
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveTab('moderate')}
-                    className={`py-1.5 rounded-lg transition-all ${
-                      activeTab === 'moderate' ? 'bg-white text-red-900 shadow-xs' : 'hover:text-slate-900'
-                    }`}
+                    className={`py-1.5 rounded-lg transition-all ${activeTab === 'moderate' ? 'bg-white text-red-900 shadow-xs' : 'hover:text-slate-900'
+                      }`}
                   >
                     High Risk
                   </button>

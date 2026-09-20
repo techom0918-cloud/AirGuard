@@ -94,7 +94,7 @@ export interface DeviceSensor {
   name: string;
   type: string;
   model: string;
-  status: 'active' | 'calibrating' | 'offline';
+  status: 'active' | 'calibrating' | 'offline' | 'standby';
   unit: string;
   latestReading: string | number;
 }
@@ -108,7 +108,13 @@ export interface DeviceStatus {
   isCharging: boolean;
   firmwareVersion: string;
   lastSyncSecondsAgo: number;
-  connectionQuality: 'Excellent' | 'Good' | 'Fair' | 'Poor';
+  connectionQuality:
+    | 'Excellent'
+    | 'Good'
+    | 'Fair'
+    | 'Poor'
+    | 'Waiting for device'
+    | 'Connected (Simulated)';
   rssi: number; // in dBm
   activeSensorsCount: number;
   totalSensorsCount: number;

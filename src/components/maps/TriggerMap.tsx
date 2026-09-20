@@ -5,14 +5,9 @@ import {
   ZoomIn, 
   ZoomOut, 
   Compass, 
-  AlertTriangle, 
   Wind, 
   Activity, 
-  ShieldCheck,
-  Thermometer,
-  Droplets,
-  Clock,
-  ChevronRight,
+  Clock, 
   Info
 } from 'lucide-react';
 import { EnvironmentalEvent, RiskLevel } from '../../types';
@@ -56,33 +51,33 @@ export const TriggerMap: React.FC<TriggerMapProps> = ({
       className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden flex flex-col"
     >
       {/* Map Header */}
-      <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <MapPin className="w-5 h-5 text-[#0A6847]" />
-            <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
-              Environmental Trigger Map
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight font-['Space_Grotesk']">
+              Localized Observation Zones
             </h2>
           </div>
           <p className="text-xs text-slate-500 font-normal mt-0.5">
-            Explore where higher-risk environmental conditions have been observed.
+            Select a marker on the map canvas to inspect localized environmental telemetry
           </p>
         </div>
 
         {/* Filter Pills */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase mr-1">
-            Display:
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">
+            Filter:
           </span>
           {(['all', 'low', 'moderate', 'high'] as const).map((r) => (
             <button
               key={r}
               type="button"
               onClick={() => setRiskFilter(r)}
-              className={`px-2.5 py-1 text-xs font-semibold rounded-lg capitalize transition-colors cursor-pointer border ${
+              className={`px-3 py-1.5 min-h-[34px] text-xs font-semibold rounded-lg capitalize transition-all cursor-pointer border ${
                 riskFilter === r
-                  ? 'bg-slate-900 text-white border-slate-900'
-                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                  ? 'bg-slate-900 text-white border-slate-900 shadow-2xs'
+                  : 'bg-slate-50 text-slate-600 border-slate-200/80 hover:bg-slate-100 hover:text-slate-900'
               }`}
             >
               {r === 'all' ? 'All Pins' : `${r}`}
@@ -92,9 +87,9 @@ export const TriggerMap: React.FC<TriggerMapProps> = ({
       </div>
 
       {/* Main Map Canvas and Sidebar Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 min-h-[460px]">
+      <div className="grid grid-cols-1 lg:grid-cols-3">
         {/* Geospatial Map Canvas */}
-        <div className="lg:col-span-2 relative bg-[#F4F7F5] overflow-hidden border-b lg:border-b-0 lg:border-r border-slate-200">
+        <div className="lg:col-span-2 relative bg-[#F4F7F5] overflow-hidden border-b lg:border-b-0 lg:border-r border-slate-200 min-h-[300px] sm:min-h-[380px] lg:min-h-[460px]">
           {/* Stylized vector map background representation */}
           <div className="absolute inset-0 select-none pointer-events-none">
             {/* Grid coordinate grid lines */}
@@ -141,14 +136,14 @@ export const TriggerMap: React.FC<TriggerMapProps> = ({
           <div className="absolute top-3 right-3 flex flex-col gap-1.5 z-10">
             <button
               type="button"
-              className="w-8 h-8 rounded-lg bg-white/90 backdrop-blur-xs border border-slate-200 text-slate-700 flex items-center justify-center hover:bg-white shadow-xs cursor-pointer"
+              className="w-8 h-8 rounded-lg bg-white/95 backdrop-blur-xs border border-slate-200 text-slate-700 flex items-center justify-center hover:bg-white shadow-xs cursor-pointer"
               title="Zoom In"
             >
               <ZoomIn className="w-4 h-4" />
             </button>
             <button
               type="button"
-              className="w-8 h-8 rounded-lg bg-white/90 backdrop-blur-xs border border-slate-200 text-slate-700 flex items-center justify-center hover:bg-white shadow-xs cursor-pointer"
+              className="w-8 h-8 rounded-lg bg-white/95 backdrop-blur-xs border border-slate-200 text-slate-700 flex items-center justify-center hover:bg-white shadow-xs cursor-pointer"
               title="Zoom Out"
             >
               <ZoomOut className="w-4 h-4" />
@@ -156,7 +151,7 @@ export const TriggerMap: React.FC<TriggerMapProps> = ({
             <button
               type="button"
               onClick={() => setMapStyle((prev) => (prev === 'light' ? 'terrain' : 'light'))}
-              className="w-8 h-8 rounded-lg bg-white/90 backdrop-blur-xs border border-slate-200 text-slate-700 flex items-center justify-center hover:bg-white shadow-xs cursor-pointer"
+              className="w-8 h-8 rounded-lg bg-white/95 backdrop-blur-xs border border-slate-200 text-slate-700 flex items-center justify-center hover:bg-white shadow-xs cursor-pointer"
               title="Toggle Map Style"
             >
               <Layers className="w-4 h-4" />
@@ -164,9 +159,9 @@ export const TriggerMap: React.FC<TriggerMapProps> = ({
           </div>
 
           {/* Compass pill */}
-          <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-xs px-2 py-1 rounded-md border border-slate-200 text-[10px] font-semibold text-slate-600 flex items-center gap-1">
+          <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-slate-200/90 text-[10px] font-semibold text-slate-600 flex items-center gap-1.5 shadow-2xs">
             <Compass className="w-3.5 h-3.5 text-[#0A6847]" />
-            <span>SF Metro Zone (ESP32 GPS Lock)</span>
+            <span>SF Metro Area • Simulated Coordinates</span>
           </div>
 
           {/* Interactive Event Markers on Map */}
@@ -187,7 +182,7 @@ export const TriggerMap: React.FC<TriggerMapProps> = ({
                 className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10 group"
                 onClick={() => setSelectedEventId(evt.id)}
               >
-                {/* Risk halo pulse if selected or high risk */}
+                {/* Halo pulse if selected or high risk */}
                 {(isSelected || evt.riskLevel === 'high') && (
                   <span
                     className="absolute -inset-2 rounded-full opacity-60 animate-ping"
@@ -221,11 +216,11 @@ export const TriggerMap: React.FC<TriggerMapProps> = ({
         </div>
 
         {/* Selected Location Detail Sidebar */}
-        <div className="p-5 flex flex-col justify-between bg-white">
+        <div className="p-4 sm:p-5 flex flex-col justify-between bg-white space-y-4">
           {selectedEvent ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                   Location Observation
                 </span>
                 <Badge riskLevel={selectedEvent.riskLevel} size="sm">
@@ -238,7 +233,7 @@ export const TriggerMap: React.FC<TriggerMapProps> = ({
               </div>
 
               <div>
-                <h3 className="text-base font-bold text-slate-900">
+                <h3 className="text-base font-bold text-slate-900 font-['Space_Grotesk']">
                   {selectedEvent.location.name}
                 </h3>
                 <p className="text-xs text-slate-500 font-medium">
@@ -253,34 +248,34 @@ export const TriggerMap: React.FC<TriggerMapProps> = ({
               {/* Environmental Telemetry Metrics at This Spot */}
               <div className="grid grid-cols-2 gap-2">
                 <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                  <span className="text-[10px] text-slate-400 block uppercase">
+                  <span className="text-[10px] text-slate-400 block uppercase font-medium">
                     PM2.5 Density
                   </span>
-                  <span className="text-base font-extrabold text-slate-900 font-['Space_Grotesk']">
-                    {selectedEvent.pm25} µg/m³
+                  <span className="text-sm sm:text-base font-extrabold text-slate-900 font-['Space_Grotesk']">
+                    {selectedEvent.pm25} <span className="text-[10px] font-normal text-slate-500">µg/m³</span>
                   </span>
                 </div>
                 <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                  <span className="text-[10px] text-slate-400 block uppercase">
+                  <span className="text-[10px] text-slate-400 block uppercase font-medium">
                     VOC Reading
                   </span>
-                  <span className="text-base font-extrabold text-slate-900 font-['Space_Grotesk']">
-                    {selectedEvent.voc} ppb
+                  <span className="text-sm sm:text-base font-extrabold text-slate-900 font-['Space_Grotesk']">
+                    {selectedEvent.voc} <span className="text-[10px] font-normal text-slate-500">ppb</span>
                   </span>
                 </div>
                 <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                  <span className="text-[10px] text-slate-400 block uppercase">
+                  <span className="text-[10px] text-slate-400 block uppercase font-medium">
                     Temperature
                   </span>
-                  <span className="text-base font-extrabold text-slate-900 font-['Space_Grotesk']">
+                  <span className="text-sm sm:text-base font-extrabold text-slate-900 font-['Space_Grotesk']">
                     {selectedEvent.temperature}°C
                   </span>
                 </div>
                 <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                  <span className="text-[10px] text-slate-400 block uppercase">
+                  <span className="text-[10px] text-slate-400 block uppercase font-medium">
                     Humidity
                   </span>
-                  <span className="text-base font-extrabold text-slate-900 font-['Space_Grotesk']">
+                  <span className="text-sm sm:text-base font-extrabold text-slate-900 font-['Space_Grotesk']">
                     {selectedEvent.humidity}%
                   </span>
                 </div>
@@ -288,18 +283,18 @@ export const TriggerMap: React.FC<TriggerMapProps> = ({
 
               {/* Context notes */}
               <div className="p-3 rounded-xl bg-emerald-50/50 border border-emerald-100 text-xs text-slate-700">
-                <span className="font-semibold text-emerald-900 block mb-1">
+                <span className="font-semibold text-emerald-950 block mb-1">
                   Environmental Analysis:
                 </span>
-                <p className="leading-relaxed">
+                <p className="leading-relaxed text-slate-600">
                   {selectedEvent.notes}
                 </p>
               </div>
 
               {selectedEvent.inhalationDetected && (
-                <div className="p-2.5 rounded-lg bg-emerald-100/70 border border-emerald-200 text-xs font-medium text-emerald-900 flex items-center gap-2">
+                <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-900 flex items-center gap-2">
                   <Wind className="w-4 h-4 text-[#0A6847]" />
-                  <span>Smart inhaler actuation logged at this location</span>
+                  <span>Inhaler actuation logged at this location</span>
                 </div>
               )}
             </div>
@@ -309,7 +304,7 @@ export const TriggerMap: React.FC<TriggerMapProps> = ({
             </div>
           )}
 
-          <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-400 flex items-start gap-1.5">
+          <div className="pt-3 border-t border-slate-100 text-[11px] text-slate-400 flex items-start gap-1.5">
             <Info className="w-3.5 h-3.5 shrink-0 text-slate-400 mt-0.5" />
             <span>
               Geospatial observations map environmental risk clusters. Does not represent medical diagnosis.

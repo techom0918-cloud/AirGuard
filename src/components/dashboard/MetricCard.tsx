@@ -18,8 +18,10 @@ interface MetricCardProps {
   icon: LucideIcon;
   subLabel?: string;
   thresholdMax?: number;
+  thresholdGuide?: string;
   currentNumericValue?: number;
   badgeVariant?: 'green' | 'amber' | 'red' | 'neutral' | 'blue';
+  featured?: boolean;
 }
 
 export const MetricCard: React.FC<MetricCardProps> = ({
@@ -32,8 +34,10 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   icon: Icon,
   subLabel,
   thresholdMax = 100,
+  thresholdGuide,
   currentNumericValue,
   badgeVariant = 'green',
+  featured = false,
 }) => {
   // Render trend icon and text
   const renderTrend = () => {
@@ -71,43 +75,62 @@ export const MetricCard: React.FC<MetricCardProps> = ({
 
   // Safe percentage calculation for threshold bar
   const numericVal = typeof value === 'number' ? value : currentNumericValue ?? 0;
-  const fillPercent = Math.min(100, Math.max(8, (numericVal / thresholdMax) * 100));
+  const fillPercent = Math.min(100, Math.max(6, (numericVal / thresholdMax) * 100));
 
   return (
     <div
       id={id}
-      className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-xs hover:border-slate-300 transition-colors flex flex-col justify-between"
+      className={`rounded-2xl border p-4 sm:p-5 shadow-xs transition-all flex flex-col justify-between w-full min-w-0 ${
+        featured
+          ? 'bg-white border-emerald-300/80 ring-1 ring-emerald-100 shadow-sm'
+          : 'bg-white border-slate-200/90 hover:border-slate-300'
+      }`}
     >
       <div>
         {/* Header row: Name and Icon */}
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            {name}
-          </span>
-          <div className="w-8 h-8 rounded-lg bg-emerald-50 text-[#0A6847] flex items-center justify-center">
-            <Icon className="w-4 h-4" />
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider truncate">
+              {name}
+            </span>
+            {featured && (
+              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-50 text-[#0A6847] border border-emerald-200 shrink-0">
+                Core
+              </span>
+            )}
+          </div>
+          <div
+            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 ${
+              featured ? 'bg-emerald-100/70 text-[#0A6847]' : 'bg-slate-100 text-slate-600'
+            }`}
+          >
+            <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </div>
         </div>
 
         {/* Big metric reading */}
-        <div className="mt-3 flex items-baseline gap-1.5">
-          <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight font-['Space_Grotesk']">
+        <div className="mt-2.5 flex items-baseline gap-1.5 min-w-0">
+          <span
+            className={`font-black text-slate-900 tracking-tight font-['Space_Grotesk'] truncate ${
+              featured ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'
+            }`}
+          >
             {value}
           </span>
-          <span className="text-xs sm:text-sm font-semibold text-slate-500">
+          <span className="text-xs sm:text-sm font-semibold text-slate-500 shrink-0">
             {unit}
           </span>
         </div>
 
         {subLabel && (
-          <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+          <p className="text-[11px] text-slate-500 font-medium mt-0.5 truncate">
             {subLabel}
           </p>
         )}
       </div>
 
-      {/* Threshold micro-meter */}
-      <div className="mt-4 space-y-2">
+      {/* Threshold micro-meter & Footer */}
+      <div className="mt-4 space-y-2 w-full min-w-0">
         <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-500 ${
@@ -115,18 +138,27 @@ export const MetricCard: React.FC<MetricCardProps> = ({
                 ? 'bg-emerald-500'
                 : badgeVariant === 'amber'
                 ? 'bg-amber-500'
-                : 'bg-red-500'
+                : badgeVariant === 'red'
+                ? 'bg-red-500'
+                : 'bg-slate-400'
             }`}
             style={{ width: `${fillPercent}%` }}
           />
         </div>
 
-        {/* Footer row: Status badge and Trend indicator */}
-        <div className="flex items-center justify-between pt-1">
-          <Badge variant={badgeVariant} size="sm">
-            {status}
-          </Badge>
-          <div>{renderTrend()}</div>
+        {/* Footer row: Status badge, threshold guide, and Trend indicator */}
+        <div className="flex items-center justify-between pt-1 gap-1 text-[11px] min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Badge variant={badgeVariant} size="sm">
+              {status}
+            </Badge>
+            {thresholdGuide && (
+              <span className="text-[10px] text-slate-400 font-mono hidden sm:inline truncate">
+                {thresholdGuide}
+              </span>
+            )}
+          </div>
+          <div className="shrink-0">{renderTrend()}</div>
         </div>
       </div>
     </div>

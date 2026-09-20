@@ -131,6 +131,24 @@ class AuthService {
     }
   }
 
+  private saveRegisteredUser(user: User) {
+    try {
+      const records = this.getRegisteredRecords();
+      const existingIdx = records.findIndex(
+        (r) => r.user.id === user.id || r.user.email.toLowerCase() === user.email.toLowerCase()
+      );
+      if (existingIdx >= 0) {
+        records[existingIdx] = {
+          ...records[existingIdx],
+          user,
+        };
+        localStorage.setItem(DEV_USERS_STORAGE_KEY, JSON.stringify(records));
+      }
+    } catch {
+      // Ignore dev storage errors
+    }
+  }
+
   public async login(
     email: string,
     password: string,
