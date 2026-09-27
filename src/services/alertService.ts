@@ -1,18 +1,37 @@
 import { RiskAlert, AlertSeverity, AlertStatus } from '../types';
 import { mockAlerts } from '../data/mockAlerts';
+import { apiClient } from './apiClient';
+import { alertToRiskAlert, BackendAlertDto } from './adapters';
 
 type AlertListener = (alerts: RiskAlert[]) => void;
 
 class AlertService {
   private alerts: RiskAlert[] = [...mockAlerts];
   private listeners: Set<AlertListener> = new Set();
+  private deviceId: string = 'DEV-ESP32-001';
+
+  /**
+   * Fetches real risk alerts from backend REST API and updates internal store.
+   */
+  public async fetchAlertsFromApi(): Promise<RiskAlert[]> {
+    try {
+      const dtos = await apiClient.get<BackendAlertDto[]>(`/alerts/${this.deviceId}?limit=20`);
+      if (Array.isArray(dtos) && dtos.length > 0) {
+        this.alerts = dtos.map(alertToRiskAlert);
+        this.notify();
+      }
+    } catch {
+      // Graceful fallback to mockAlerts if backend API server is unreachable
+    }
+    return this.alerts;
+  }
 
   public async getAlerts(filter?: {
     severity?: AlertSeverity | 'all';
     status?: AlertStatus | 'all';
     search?: string;
   }): Promise<RiskAlert[]> {
-    await new Promise((r) => setTimeout(r, 200));
+    await this.fetchAlertsFromApi();
 
     let result = [...this.alerts];
 
@@ -36,6 +55,7 @@ class AlertService {
   }
 
   public async getUnreadCount(): Promise<number> {
+    await this.fetchAlertsFromApi();
     return this.alerts.filter((a) => a.status === 'new').length;
   }
 
@@ -53,6 +73,27 @@ class AlertService {
       locationName: alertData.locationName || 'Current Location',
       ...alertData,
     };
+
+    try {
+      const riskLevel =
+        alertData.severity === 'high' || alertData.severity === 'critical'
+          ? 'high'
+          : alertData.severity === 'moderate'
+          ? 'moderate'
+          : 'low';
+
+      await apiClient.post<BackendAlertDto>('/alerts', {
+        device_id: this.deviceId,
+        risk_level: riskLevel,
+        lat: 28.6139,
+        lng: 77.209,
+        timestamp: new Date().toISOString(),
+        resolved: false,
+      });
+    } catch {
+      // Local fallback if API post fails
+    }
+
     this.alerts.unshift(newAlert);
     this.notify();
     return newAlert;

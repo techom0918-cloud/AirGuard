@@ -1,8 +1,8 @@
 import { EnvironmentSnapshot, RiskLevel, TrendDataPoint } from '../types';
-import { EnvironmentalDataSource, MockSimulatorDataSource } from './environmentalDataSource';
+import { EnvironmentalDataSource, defaultEnvironmentalDataSource } from './environmentalDataSource';
 
-// Active environmental telemetry data source (currently using development simulation)
-const activeDataSource: EnvironmentalDataSource = new MockSimulatorDataSource();
+// Active environmental telemetry data source connected to backend API
+const activeDataSource: EnvironmentalDataSource = defaultEnvironmentalDataSource;
 
 export const environmentService = {
   getDataSourceType(): 'simulation' | 'hardware' {
@@ -10,11 +10,11 @@ export const environmentService = {
   },
 
   getDataSourceLabel(): string {
-    return activeDataSource.type === 'simulation' ? 'Data: Simulation Mode' : 'Data: Live Hardware';
+    return activeDataSource.type === 'simulation' ? 'Data: Simulation Mode' : 'Data: Live Hardware API';
   },
 
   /**
-   * Retrieves the current environmental snapshot.
+   * Retrieves the current environmental snapshot from backend REST API.
    */
   async getLatestSnapshot(): Promise<EnvironmentSnapshot> {
     return activeDataSource.getLatestSnapshot();

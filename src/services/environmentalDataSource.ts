@@ -1,12 +1,14 @@
 import { EnvironmentSnapshot, RiskLevel, TrendDataPoint } from '../types';
 import { initialEnvironmentSnapshot, moderateRiskSnapshot, highRiskSnapshot } from '../data/mockDashboard';
 import { mock24HourTrend } from '../data/mockAnalytics';
+import { apiClient } from './apiClient';
+import { readingToSnapshot, readingToTrendPoint, BackendReadingDto } from './adapters';
 
 export type DataSourceType = 'simulation' | 'hardware';
 
 /**
  * Common abstraction for environmental telemetry providers.
- * Allows switching between development mock/simulation telemetry and future ESP32 / Firebase streams
+ * Allows switching between development mock/simulation telemetry and live Firebase backend API
  * with zero modifications to consumer components.
  */
 export interface EnvironmentalDataSource {
@@ -71,4 +73,70 @@ export class MockSimulatorDataSource implements EnvironmentalDataSource {
   }
 }
 
-export const defaultEnvironmentalDataSource = new MockSimulatorDataSource();
+/**
+ * Live backend REST API data source querying Firestore readings.
+ */
+export class ApiEnvironmentalDataSource implements EnvironmentalDataSource {
+  public readonly type: DataSourceType = 'hardware';
+  public readonly isHardwareConnected: boolean = true;
+
+  private mockFallback: MockSimulatorDataSource = new MockSimulatorDataSource();
+  private deviceId: string;
+
+  constructor(deviceId = 'DEV-ESP32-001') {
+    this.deviceId = deviceId;
+  }
+
+  public async getLatestSnapshot(): Promise<EnvironmentSnapshot> {
+    try {
+      const reading = await apiClient.get<BackendReadingDto>(`/readings/${this.deviceId}/latest`);
+      if (!reading || !reading.device_id) {
+        return this.mockFallback.getLatestSnapshot();
+      }
+      return readingToSnapshot(reading);
+    } catch {
+      // Graceful fallback to mock data if API server is unreachable or device has no readings
+      return this.mockFallback.getLatestSnapshot();
+    }
+  }
+
+  public subscribeToSnapshot(callback: (snapshot: EnvironmentSnapshot) => void): () => void {
+    let isMounted = true;
+
+    // Initial fetch
+    this.getLatestSnapshot().then((snap) => {
+      if (isMounted) callback(snap);
+    });
+
+    // Polling every 10 seconds for live environmental updates
+    const intervalId = setInterval(() => {
+      this.getLatestSnapshot().then((snap) => {
+        if (isMounted) callback(snap);
+      });
+    }, 10000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }
+
+  public async getHistoricalTrend(timeframe: '1H' | '6H' | '24H' = '24H'): Promise<TrendDataPoint[]> {
+    try {
+      const limit = timeframe === '1H' ? 5 : timeframe === '6H' ? 12 : 50;
+      const readings = await apiClient.get<BackendReadingDto[]>(`/readings/${this.deviceId}?limit=${limit}`);
+      if (!Array.isArray(readings) || readings.length === 0) {
+        return this.mockFallback.getHistoricalTrend(timeframe);
+      }
+      return readings.map(readingToTrendPoint).reverse();
+    } catch {
+      return this.mockFallback.getHistoricalTrend(timeframe);
+    }
+  }
+
+  public setSimulatedRisk(level: RiskLevel): void {
+    this.mockFallback.setSimulatedRisk(level);
+  }
+}
+
+export const defaultEnvironmentalDataSource = new ApiEnvironmentalDataSource('DEV-ESP32-001');

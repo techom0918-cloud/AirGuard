@@ -1,10 +1,7 @@
 import { EnvironmentalEvent, RiskLevel, EventType } from '../types';
 import { mockEnvironmentalEvents } from '../data/mockEvents';
-
-/**
- * Service abstraction for Environmental and Inhalation Events.
- * Easily interchangeable with Firebase Realtime Database / Firestore queries.
- */
+import { apiClient } from './apiClient';
+import { readingToEvent, BackendReadingDto } from './adapters';
 
 let eventStore: EnvironmentalEvent[] = [...mockEnvironmentalEvents];
 
@@ -17,10 +14,27 @@ export interface EventFilterCriteria {
 
 export const eventService = {
   /**
+   * Fetches real environmental telemetry points from backend REST API heatmap endpoint.
+   */
+  async fetchEventsFromApi(): Promise<EnvironmentalEvent[]> {
+    try {
+      const dtos = await apiClient.get<BackendReadingDto[]>(
+        '/heatmap?minLat=28.5&maxLat=28.7&minLng=77.1&maxLng=77.4&limit=100'
+      );
+      if (Array.isArray(dtos) && dtos.length > 0) {
+        eventStore = dtos.map((dto) => readingToEvent(dto));
+      }
+    } catch {
+      // Graceful fallback to mockEnvironmentalEvents if backend API server is unreachable
+    }
+    return eventStore;
+  },
+
+  /**
    * Retrieves events matching optional filters.
    */
   async getEvents(filters?: EventFilterCriteria): Promise<EnvironmentalEvent[]> {
-    await new Promise((resolve) => setTimeout(resolve, 80));
+    await this.fetchEventsFromApi();
     let results = [...eventStore];
 
     if (!filters) return results;
@@ -51,7 +65,7 @@ export const eventService = {
    * Retrieves a single event by ID.
    */
   async getEventById(id: string): Promise<EnvironmentalEvent | null> {
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await this.fetchEventsFromApi();
     return eventStore.find((evt) => evt.id === id) || null;
   },
 

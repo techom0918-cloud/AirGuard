@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ResponsiveContainer,
   LineChart,
@@ -27,9 +27,28 @@ import {
   Wind
 } from 'lucide-react';
 import { Badge } from '../../components/common/Badge';
+import { TrendDataPoint } from '../../types';
+import { environmentService } from '../../services/environmentService';
 
 export const AnalyticsPage: React.FC = () => {
   const [selectedSpan, setSelectedSpan] = useState<'24h' | '7d'>('24h');
+  const [trendData, setTrendData] = useState<TrendDataPoint[]>(mock24HourTrend);
+
+  useEffect(() => {
+    let isMounted = true;
+    const timeframe = selectedSpan === '24h' ? '24H' : '24H';
+    environmentService.getHistoricalTrend(timeframe).then((data) => {
+      if (isMounted && Array.isArray(data) && data.length > 0) {
+        setTrendData(data);
+      }
+    }).catch(() => {
+      // Keep existing mock fallback if API fails
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedSpan]);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -230,7 +249,7 @@ export const AnalyticsPage: React.FC = () => {
         <div className="h-72 sm:h-80 w-full pt-4">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
-              data={mock24HourTrend}
+              data={trendData}
               margin={{ top: 12, right: 12, left: -10, bottom: 0 }}
             >
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
