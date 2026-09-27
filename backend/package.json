@@ -10,7 +10,8 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "seed": "tsx src/scripts/seedFirestore.ts",
-    "verify": "tsx src/scripts/verifyFirestore.ts"
+    "verify": "tsx src/scripts/verifyFirestore.ts",
+    "test:api": "tsx src/scripts/testApi.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",

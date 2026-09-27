@@ -3,6 +3,10 @@ import cors from 'cors';
 import { config } from './config/index.js';
 import { initializeFirebase } from './config/firebase.js';
 import healthRoutes from './routes/healthRoutes.js';
+import deviceRoutes from './routes/deviceRoutes.js';
+import readingRoutes from './routes/readingRoutes.js';
+import alertRoutes from './routes/alertRoutes.js';
+import heatmapRoutes from './routes/heatmapRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -16,6 +20,10 @@ initializeFirebase();
 
 // Routes
 app.use('/api', healthRoutes);
+app.use('/api/devices', deviceRoutes);
+app.use('/api/readings', readingRoutes);
+app.use('/api/alerts', alertRoutes);
+app.use('/api/heatmap', heatmapRoutes);
 
 // Error Handling Middleware
 app.use(errorHandler);
