@@ -6,6 +6,8 @@ import { readingToSnapshot, readingToTrendPoint, BackendReadingDto } from './ada
 
 export type DataSourceType = 'simulation' | 'hardware';
 
+const DEFAULT_DEVICE_ID = 'AG-001';
+
 /**
  * Common abstraction for environmental telemetry providers.
  * Allows switching between development mock/simulation telemetry and live Firebase backend API
@@ -83,13 +85,24 @@ export class ApiEnvironmentalDataSource implements EnvironmentalDataSource {
   private mockFallback: MockSimulatorDataSource = new MockSimulatorDataSource();
   private deviceId: string;
 
-  constructor(deviceId = 'DEV-ESP32-001') {
+  constructor(deviceId = DEFAULT_DEVICE_ID) {
     this.deviceId = deviceId;
   }
 
   public async getLatestSnapshot(): Promise<EnvironmentSnapshot> {
     try {
-      const reading = await apiClient.get<BackendReadingDto>(`/readings/${this.deviceId}/latest`);
+      // Primary attempt: GET /readings/:deviceId/latest
+      let reading: BackendReadingDto | null = null;
+      try {
+        reading = await apiClient.get<BackendReadingDto>(`/readings/${this.deviceId}/latest`);
+      } catch {
+        // Fallback attempt: GET /history/:deviceId?limit=1
+        const history = await apiClient.get<BackendReadingDto[]>(`/history/${this.deviceId}?limit=1`);
+        if (Array.isArray(history) && history.length > 0) {
+          reading = history[0];
+        }
+      }
+
       if (!reading || !reading.device_id) {
         return this.mockFallback.getLatestSnapshot();
       }
@@ -124,7 +137,13 @@ export class ApiEnvironmentalDataSource implements EnvironmentalDataSource {
   public async getHistoricalTrend(timeframe: '1H' | '6H' | '24H' = '24H'): Promise<TrendDataPoint[]> {
     try {
       const limit = timeframe === '1H' ? 5 : timeframe === '6H' ? 12 : 50;
-      const readings = await apiClient.get<BackendReadingDto[]>(`/readings/${this.deviceId}?limit=${limit}`);
+      let readings: BackendReadingDto[] = [];
+      try {
+        readings = await apiClient.get<BackendReadingDto[]>(`/history/${this.deviceId}?limit=${limit}`);
+      } catch {
+        readings = await apiClient.get<BackendReadingDto[]>(`/readings/${this.deviceId}?limit=${limit}`);
+      }
+
       if (!Array.isArray(readings) || readings.length === 0) {
         return this.mockFallback.getHistoricalTrend(timeframe);
       }
@@ -139,4 +158,4 @@ export class ApiEnvironmentalDataSource implements EnvironmentalDataSource {
   }
 }
 
-export const defaultEnvironmentalDataSource = new ApiEnvironmentalDataSource('DEV-ESP32-001');
+export const defaultEnvironmentalDataSource = new ApiEnvironmentalDataSource(DEFAULT_DEVICE_ID);

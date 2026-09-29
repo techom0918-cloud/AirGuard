@@ -8,14 +8,20 @@ type AlertListener = (alerts: RiskAlert[]) => void;
 class AlertService {
   private alerts: RiskAlert[] = [...mockAlerts];
   private listeners: Set<AlertListener> = new Set();
-  private deviceId: string = 'DEV-ESP32-001';
+  private deviceId: string = 'AG-001';
 
   /**
    * Fetches real risk alerts from backend REST API and updates internal store.
    */
   public async fetchAlertsFromApi(): Promise<RiskAlert[]> {
     try {
-      const dtos = await apiClient.get<BackendAlertDto[]>(`/alerts/${this.deviceId}?limit=20`);
+      let dtos: BackendAlertDto[] = [];
+      try {
+        dtos = await apiClient.get<BackendAlertDto[]>(`/alerts/${this.deviceId}?limit=20`);
+      } catch {
+        dtos = await apiClient.get<BackendAlertDto[]>(`/alerts/${this.deviceId}`);
+      }
+
       if (Array.isArray(dtos) && dtos.length > 0) {
         this.alerts = dtos.map(alertToRiskAlert);
         this.notify();
@@ -77,12 +83,13 @@ class AlertService {
     try {
       const riskLevel =
         alertData.severity === 'high' || alertData.severity === 'critical'
-          ? 'high'
+          ? 'DANGER'
           : alertData.severity === 'moderate'
-          ? 'moderate'
-          : 'low';
+          ? 'WARNING'
+          : 'SAFE';
 
-      await apiClient.post<BackendAlertDto>('/alerts', {
+      // Master endpoint: POST /api/alert (singular)
+      await apiClient.post<BackendAlertDto>('/alert', {
         device_id: this.deviceId,
         risk_level: riskLevel,
         lat: 28.6139,

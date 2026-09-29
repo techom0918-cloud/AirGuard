@@ -3,9 +3,12 @@ import { alertService } from '../services/alertService.js';
 import { ApiError } from '../middleware/errorHandler.js';
 import { RiskLevel } from '../types/schema.js';
 
-const VALID_RISK_LEVELS: Set<string> = new Set(['low', 'moderate', 'high']);
+const VALID_RISK_LEVELS: Set<string> = new Set(['SAFE', 'WARNING', 'DANGER']);
 
 export const alertController = {
+  /**
+   * Master & legacy handler for alert creation: POST /api/alert & POST /api/alerts
+   */
   async saveAlert(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { device_id, risk_level, lat, lng, timestamp, resolved } = req.body || {};
@@ -15,7 +18,10 @@ export const alertController = {
       }
 
       if (!risk_level || !VALID_RISK_LEVELS.has(risk_level)) {
-        throw new ApiError(400, "risk_level is required and must be one of 'low', 'moderate', 'high'.");
+        if (['low', 'moderate', 'high'].includes(risk_level)) {
+          throw new ApiError(400, `INVALID_RISK_LEVEL: Legacy risk level '${risk_level}' is not supported. Master risk vocabulary requires SAFE, WARNING, or DANGER.`);
+        }
+        throw new ApiError(400, "risk_level is required and must be one of 'SAFE', 'WARNING', 'DANGER'.");
       }
 
       if (typeof lat !== 'number' || !Number.isFinite(lat) || lat < -90 || lat > 90) {
@@ -30,17 +36,15 @@ export const alertController = {
         throw new ApiError(400, 'timestamp is required and must be a valid timestamp string.');
       }
 
-      if (typeof resolved !== 'boolean') {
-        throw new ApiError(400, 'resolved is required and must be a boolean value.');
-      }
+      const isResolved = resolved !== undefined ? Boolean(resolved) : false;
 
       const created = await alertService.saveAlert({
         device_id: device_id.trim(),
         risk_level: risk_level as RiskLevel,
         lat,
         lng,
-        timestamp,
-        resolved,
+        timestamp: new Date(timestamp).toISOString(),
+        resolved: isResolved,
       });
 
       res.status(201).json(created);

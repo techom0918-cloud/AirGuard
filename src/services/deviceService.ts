@@ -10,7 +10,7 @@ import { deviceToDeviceStatus, BackendDeviceDto } from './adapters';
 
 let deviceState: DeviceStatus = { ...mockDeviceStatus };
 const listeners: Set<(status: DeviceStatus) => void> = new Set();
-const defaultDeviceId = 'DEV-ESP32-001';
+const defaultDeviceId = 'AG-001';
 
 export const deviceService = {
   async fetchDeviceFromApi(deviceId = defaultDeviceId): Promise<DeviceStatus> {

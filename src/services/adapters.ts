@@ -16,7 +16,7 @@ export interface BackendReadingDto {
   pm25: number;
   temp: number;
   humidity: number;
-  risk_level: RiskLevel;
+  risk_level: string;
   lat: number;
   lng: number;
   timestamp: string;
@@ -24,7 +24,7 @@ export interface BackendReadingDto {
 
 export interface BackendAlertDto {
   device_id: string;
-  risk_level: RiskLevel;
+  risk_level: string;
   lat: number;
   lng: number;
   timestamp: string;
@@ -38,6 +38,29 @@ export interface BackendDeviceDto {
 }
 
 /**
+ * Transforms master backend risk level vocabulary (SAFE, WARNING, DANGER)
+ * into existing frontend UI RiskLevel vocabulary ('low', 'moderate', 'high').
+ * Handles case-insensitive inputs safely (SAFE, safe, Safe, WARNING, etc.)
+ */
+export function normalizeRiskLevel(rawRisk: string | undefined): RiskLevel {
+  if (!rawRisk || typeof rawRisk !== 'string') return 'low';
+  const clean = rawRisk.trim().toUpperCase();
+
+  if (clean === 'SAFE' || clean === 'LOW') {
+    return 'low';
+  }
+  if (clean === 'WARNING' || clean === 'MODERATE') {
+    return 'moderate';
+  }
+  if (clean === 'DANGER' || clean === 'HIGH' || clean === 'CRITICAL') {
+    return 'high';
+  }
+
+  // Safe fallback for unrecognized risk strings (does not force to high/danger)
+  return 'low';
+}
+
+/**
  * Pure transformation adapters: Backend DTOs -> Frontend UI Models
  */
 
@@ -45,7 +68,7 @@ export function readingToSnapshot(reading: BackendReadingDto): EnvironmentSnapsh
   const pm25Value = typeof reading?.pm25 === 'number' && Number.isFinite(reading.pm25) ? reading.pm25 : 0;
   const tempValue = typeof reading?.temp === 'number' && Number.isFinite(reading.temp) ? reading.temp : 24;
   const humidityValue = typeof reading?.humidity === 'number' && Number.isFinite(reading.humidity) ? reading.humidity : 50;
-  const riskLevel: RiskLevel = reading?.risk_level || 'low';
+  const riskLevel: RiskLevel = normalizeRiskLevel(reading?.risk_level);
 
   const riskScore = Math.min(100, Math.max(0, Math.round(pm25Value * 0.85)));
 
@@ -129,7 +152,7 @@ export function readingToTrendPoint(reading: BackendReadingDto): TrendDataPoint 
     voc: 120,
     temperature: typeof reading.temp === 'number' && Number.isFinite(reading.temp) ? reading.temp : 24,
     humidity: typeof reading.humidity === 'number' && Number.isFinite(reading.humidity) ? reading.humidity : 50,
-    riskLevel: reading.risk_level || 'low',
+    riskLevel: normalizeRiskLevel(reading.risk_level),
   };
 }
 
@@ -145,13 +168,14 @@ export function readingToEvent(reading: BackendReadingDto): EnvironmentalEvent {
 
   const lat = typeof reading.lat === 'number' && Number.isFinite(reading.lat) ? reading.lat : 28.6139;
   const lng = typeof reading.lng === 'number' && Number.isFinite(reading.lng) ? reading.lng : 77.209;
+  const riskLevel = normalizeRiskLevel(reading.risk_level);
 
   return {
     id: `evt-${reading.device_id}-${reading.timestamp}`,
     timestamp: formattedTime,
     date: formattedDate,
-    eventType: reading.risk_level === 'high' ? 'Environmental Warning' : 'Environmental Anomaly',
-    riskLevel: reading.risk_level || 'low',
+    eventType: riskLevel === 'high' ? 'Environmental Warning' : 'Environmental Anomaly',
+    riskLevel,
     pm25: reading.pm25 || 0,
     pm10: Math.round((reading.pm25 || 0) * 1.4),
     voc: 120,
@@ -163,9 +187,9 @@ export function readingToEvent(reading: BackendReadingDto): EnvironmentalEvent {
       lat,
       lng,
     },
-    inhalationDetected: reading.risk_level === 'high',
+    inhalationDetected: riskLevel === 'high',
     environmentalTrend:
-      reading.risk_level === 'high'
+      riskLevel === 'high'
         ? 'Acute particulate concentration spike logged at coordinate'
         : 'Baseline ambient monitoring',
     notes: `Geospatial observation from device ${reading.device_id}.`,
@@ -184,12 +208,13 @@ export function alertToRiskAlert(alert: BackendAlertDto): RiskAlert {
 
   const lat = typeof alert.lat === 'number' && Number.isFinite(alert.lat) ? alert.lat : 28.6139;
   const lng = typeof alert.lng === 'number' && Number.isFinite(alert.lng) ? alert.lng : 77.209;
+  const riskLevel = normalizeRiskLevel(alert.risk_level);
 
   return {
     id: `alt-${alert.device_id}-${alert.timestamp}`,
     timestamp: formattedTime,
     date: formattedDate,
-    severity: alert.risk_level === 'high' ? 'high' : alert.risk_level === 'moderate' ? 'moderate' : 'low',
+    severity: riskLevel,
     category: 'environmental',
     title: `${alert.risk_level.toUpperCase()} Risk Alert (${alert.device_id})`,
     message: `Environmental risk threshold trigger at (${lat.toFixed(3)}, ${lng.toFixed(3)}).`,
@@ -215,7 +240,7 @@ export function deviceToDeviceStatus(device: BackendDeviceDto): DeviceStatus {
     sensors: [
       { id: 's-optical', name: 'Laser PM2.5 Array', type: 'Optical', model: 'SPS30', status: 'active', unit: 'µg/m³', latestReading: 'Active' },
       { id: 's-voc', name: 'MOX VOC Sensor', type: 'Gas', model: 'SGP40', status: 'active', unit: 'ppb', latestReading: 'Active' },
-      { id: 's-[#temp]', name: 'Temperature & Humidity', type: 'Thermo', model: 'SHT31', status: 'active', unit: '°C / %', latestReading: 'Active' },
+      { id: 's-temp', name: 'Temperature & Humidity', type: 'Thermo', model: 'SHT31', status: 'active', unit: '°C / %', latestReading: 'Active' },
       { id: 's-baro', name: 'Barometric Array', type: 'Pressure', model: 'BMP390', status: 'active', unit: 'hPa', latestReading: 'Active' },
     ],
     bleState: 'connected',
