@@ -1,5 +1,7 @@
 import admin from 'firebase-admin';
-import { config } from './index.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 let firebaseApp: admin.app.App | null = null;
 
@@ -11,36 +13,50 @@ export const initializeFirebase = (): admin.app.App | null => {
     return firebaseApp;
   }
 
-  // Check if valid non-placeholder credentials exist before attempting init
-  const hasValidCreds =
-    config.firebase.clientEmail &&
-    config.firebase.privateKey &&
-    !config.firebase.clientEmail.includes('example.com') &&
-    !config.firebase.privateKey.includes('YOUR_DEVELOPMENT_PRIVATE_KEY');
+  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  let privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
-  if (!hasValidCreds) {
-    console.log('[Firebase Admin] Skipping Firebase initialization: Placeholder or missing credentials in environment.');
-    return null;
+  if (privateKey) {
+    privateKey = privateKey.replace(/\\n/g, '\n');
+  }
+
+  const hasValidEnvCreds =
+    projectId &&
+    clientEmail &&
+    privateKey &&
+    !clientEmail.includes('example.com') &&
+    !privateKey.includes('YOUR_DEVELOPMENT_PRIVATE_KEY');
+
+  if (hasValidEnvCreds) {
+    try {
+      firebaseApp = admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId,
+          clientEmail,
+          privateKey,
+        }),
+      });
+      return firebaseApp;
+    } catch (error: any) {
+      throw new Error(`FIRESTORE_INITIALIZATION_FAILED: ${error?.message || error}`);
+    }
   }
 
   try {
-    firebaseApp = admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: config.firebase.projectId,
-        clientEmail: config.firebase.clientEmail,
-        privateKey: config.firebase.privateKey,
-      }),
-    });
-    console.log('[Firebase Admin] Initialized successfully.');
+    firebaseApp = admin.initializeApp();
     return firebaseApp;
   } catch (error) {
-    console.warn('[Firebase Admin] Initialization failed:', error);
     return null;
   }
 };
 
-export const getFirestore = () => {
+export const getFirestore = (): admin.firestore.Firestore => {
   const app = initializeFirebase();
-  if (!app) return null;
-  return admin.firestore();
+  if (!app) {
+    throw new Error('FIRESTORE_READ_FAILED: Firestore is not initialized. Ensure valid Firebase credentials exist in environment.');
+  }
+  return admin.firestore(app);
 };
+
+export default getFirestore;

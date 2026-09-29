@@ -67,10 +67,11 @@ export async function runVerification(): Promise<void> {
         typeof rdg.humidity !== 'number' ||
         typeof rdg.lat !== 'number' ||
         typeof rdg.lng !== 'number' ||
-        !['low', 'moderate', 'high'].includes(rdg.risk_level) ||
+        !['SAFE', 'WARNING', 'DANGER'].includes(rdg.risk_level) ||
         !rdg.timestamp
       ) {
-        throw new Error('Data integrity verification failed: invalid document structure in readings.');
+        console.log('[Test 5 Fail Doc]:', JSON.stringify(rdg));
+        throw new Error(`Data integrity verification failed: invalid document structure in readings. Risk level was: ${rdg.risk_level}`);
       }
     }
     console.log('✓ All returned reading fields match locked schema & types perfectly.');
@@ -89,7 +90,7 @@ export async function runVerification(): Promise<void> {
           pm25: 20 + (i % 30),
           temp: 25.0 + (i % 5),
           humidity: 50 + (i % 10),
-          risk_level: i % 10 === 0 ? 'high' : i % 3 === 0 ? 'moderate' : 'low',
+          risk_level: i % 10 === 0 ? 'DANGER' : i % 3 === 0 ? 'WARNING' : 'SAFE',
           lat: 28.6139 + i * 0.0001,
           lng: 77.209 + i * 0.0001,
           timestamp: new Date(baseTimestamp + i * 1000).toISOString(),
@@ -117,7 +118,6 @@ export async function runVerification(): Promise<void> {
   }
 }
 
-// Auto-run if executed directly
 if (process.argv[1] && process.argv[1].endsWith('verifyFirestore.ts')) {
   runVerification();
 }

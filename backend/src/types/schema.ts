@@ -1,9 +1,9 @@
 /**
  * Firestore Database Schema Definitions
- * Strictly matches the team contract specifications.
+ * Strictly matches Rishabh's database contract specifications.
  */
 
-export type RiskLevel = 'low' | 'moderate' | 'high';
+export type RiskLevel = 'SAFE' | 'WARNING' | 'DANGER';
 
 export interface DeviceDocument {
   device_id: string;
@@ -29,4 +29,13 @@ export interface AlertDocument {
   lng: number;
   timestamp: string | Date;
   resolved: boolean;
+}
+
+export interface HeatmapPoint {
+  device_id: string;
+  lat: number;
+  lng: number;
+  pm25: number;
+  risk_level: RiskLevel;
+  timestamp: string | Date;
 }

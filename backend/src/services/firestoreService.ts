@@ -1,5 +1,4 @@
 import { getFirestore } from '../config/firebase.js';
-import { logger } from '../utils/logger.js';
 import { DeviceDocument, ReadingDocument, AlertDocument, RiskLevel } from '../types/schema.js';
 
 export const COLLECTIONS = {
@@ -9,63 +8,74 @@ export const COLLECTIONS = {
 } as const;
 
 export const getDb = () => {
-  const db = getFirestore();
-  if (!db) {
-    logger.error('Firestore is not initialized. Ensure valid Firebase credentials are configured in environment.');
-    throw new Error('Firestore database connection is not initialized.');
-  }
-  return db;
+  return getFirestore();
 };
 
-const VALID_RISK_LEVELS: Set<RiskLevel> = new Set(['low', 'moderate', 'high']);
+export const VALID_RISK_LEVELS: Set<RiskLevel> = new Set(['SAFE', 'WARNING', 'DANGER']);
 
-export const validateDevice = (device: DeviceDocument): void => {
+export const validateDevice = (device: any): void => {
+  if (!device || typeof device !== 'object') {
+    throw new Error('INVALID_DEVICE_PAYLOAD: Device payload must be an object.');
+  }
   if (!device.device_id || typeof device.device_id !== 'string' || device.device_id.trim() === '') {
-    throw new Error('Invalid device payload: device_id must be a non-empty string.');
-  }
-  if (!device.owner || typeof device.owner !== 'string' || device.owner.trim() === '') {
-    throw new Error('Invalid device payload: owner must be a non-empty string.');
+    throw new Error('INVALID_DEVICE_ID: device_id must be a non-empty string.');
   }
 };
 
-export const validateReading = (reading: ReadingDocument): void => {
+export const validateReading = (reading: any): void => {
+  if (!reading || typeof reading !== 'object') {
+    throw new Error('INVALID_READING_PAYLOAD: Reading payload must be an object.');
+  }
   if (!reading.device_id || typeof reading.device_id !== 'string' || reading.device_id.trim() === '') {
-    throw new Error('Invalid reading payload: device_id must be a non-empty string.');
+    throw new Error('INVALID_DEVICE_ID: device_id must be a non-empty string.');
   }
-  if (typeof reading.pm25 !== 'number' || !Number.isFinite(reading.pm25)) {
-    throw new Error('Invalid reading payload: pm25 must be a finite number.');
+  if (typeof reading.pm25 !== 'number' || !Number.isFinite(reading.pm25) || reading.pm25 < 0) {
+    throw new Error('INVALID_PM25: pm25 must be a non-negative finite number.');
   }
-  if (typeof reading.temp !== 'number' || !Number.isFinite(reading.temp)) {
-    throw new Error('Invalid reading payload: temp must be a finite number.');
+  if (typeof reading.temp !== 'number' || !Number.isFinite(reading.temp) || reading.temp < -50 || reading.temp > 100) {
+    throw new Error('INVALID_TEMPERATURE: temp must be a finite number between -50 and 100.');
   }
-  if (typeof reading.humidity !== 'number' || !Number.isFinite(reading.humidity)) {
-    throw new Error('Invalid reading payload: humidity must be a finite number.');
+  if (typeof reading.humidity !== 'number' || !Number.isFinite(reading.humidity) || reading.humidity < 0 || reading.humidity > 100) {
+    throw new Error('INVALID_HUMIDITY: humidity must be a finite number between 0 and 100.');
   }
-  if (typeof reading.lat !== 'number' || !Number.isFinite(reading.lat)) {
-    throw new Error('Invalid reading payload: lat must be a finite number.');
+  if (typeof reading.lat !== 'number' || !Number.isFinite(reading.lat) || reading.lat < -90 || reading.lat > 90) {
+    throw new Error('INVALID_LOCATION: lat must be a finite number between -90 and 90.');
   }
-  if (typeof reading.lng !== 'number' || !Number.isFinite(reading.lng)) {
-    throw new Error('Invalid reading payload: lng must be a finite number.');
+  if (typeof reading.lng !== 'number' || !Number.isFinite(reading.lng) || reading.lng < -180 || reading.lng > 180) {
+    throw new Error('INVALID_LOCATION: lng must be a finite number between -180 and 180.');
   }
   if (!VALID_RISK_LEVELS.has(reading.risk_level)) {
-    throw new Error(`Invalid reading payload: risk_level must be one of 'low', 'moderate', 'high'. Received: ${reading.risk_level}`);
+    if (['low', 'moderate', 'high'].includes(reading.risk_level)) {
+      throw new Error(`INVALID_RISK_LEVEL: Legacy risk level '${reading.risk_level}' is not supported. Must be SAFE, WARNING, or DANGER.`);
+    }
+    throw new Error(`INVALID_RISK_LEVEL: risk_level must be one of: SAFE, WARNING, DANGER. Received: '${reading.risk_level}'`);
   }
 };
 
-export const validateAlert = (alert: AlertDocument): void => {
+export const validateAlert = (alert: any): void => {
+  if (!alert || typeof alert !== 'object') {
+    throw new Error('INVALID_ALERT_PAYLOAD: Alert payload must be an object.');
+  }
   if (!alert.device_id || typeof alert.device_id !== 'string' || alert.device_id.trim() === '') {
-    throw new Error('Invalid alert payload: device_id must be a non-empty string.');
+    throw new Error('INVALID_DEVICE_ID: device_id must be a non-empty string.');
   }
-  if (typeof alert.lat !== 'number' || !Number.isFinite(alert.lat)) {
-    throw new Error('Invalid alert payload: lat must be a finite number.');
+  if (typeof alert.lat !== 'number' || !Number.isFinite(alert.lat) || alert.lat < -90 || alert.lat > 90) {
+    throw new Error('INVALID_LOCATION: lat must be a finite number between -90 and 90.');
   }
-  if (typeof alert.lng !== 'number' || !Number.isFinite(alert.lng)) {
-    throw new Error('Invalid alert payload: lng must be a finite number.');
+  if (typeof alert.lng !== 'number' || !Number.isFinite(alert.lng) || alert.lng < -180 || alert.lng > 180) {
+    throw new Error('INVALID_LOCATION: lng must be a finite number between -180 and 180.');
   }
   if (!VALID_RISK_LEVELS.has(alert.risk_level)) {
-    throw new Error(`Invalid alert payload: risk_level must be one of 'low', 'moderate', 'high'. Received: ${alert.risk_level}`);
+    if (['low', 'moderate', 'high'].includes(alert.risk_level)) {
+      throw new Error(`INVALID_RISK_LEVEL: Legacy risk level '${alert.risk_level}' is not supported. Must be SAFE, WARNING, or DANGER.`);
+    }
+    throw new Error(`INVALID_RISK_LEVEL: risk_level must be one of: SAFE, WARNING, DANGER. Received: '${alert.risk_level}'`);
   }
   if (typeof alert.resolved !== 'boolean') {
-    throw new Error('Invalid alert payload: resolved must be a boolean.');
+    throw new Error('INVALID_ALERT_PAYLOAD: resolved must be a boolean.');
   }
 };
+
+export const validateDevicePayload = validateDevice;
+export const validateReadingPayload = validateReading;
+export const validateAlertPayload = validateAlert;
