@@ -56,12 +56,14 @@ interface TriggerMapProps {
   events?: EnvironmentalEvent[];
   id?: string;
   onLocationChange?: (locationName: string, radiusKm: number, events: EnvironmentalEvent[]) => void;
+  onPinSelect?: (event: EnvironmentalEvent) => void;
 }
 
 export const TriggerMap: React.FC<TriggerMapProps> = ({
   events: initialEvents,
   id = 'environmental-trigger-map',
   onLocationChange,
+  onPinSelect,
 }) => {
   // Current user anchor location (defaults to NIET Greater Noida)
   const [currentLocation, setCurrentLocation] = useState<GeoLocation>({
@@ -195,6 +197,13 @@ export const TriggerMap: React.FC<TriggerMapProps> = ({
       onLocationChange(currentLocation.name || 'Current Vicinity', radiusKm, displayedEvents);
     }
   }, [currentLocation, radiusKm, displayedEvents, onLocationChange]);
+
+  // Notify parent when selected event changes (pin tapped)
+  useEffect(() => {
+    if (onPinSelect && selectedEvent) {
+      onPinSelect(selectedEvent);
+    }
+  }, [selectedEvent?.id]);
 
   // Asynchronously resolve real locality names (e.g. Chowk, Civil Lines, etc.) via reverse geocoding
   useEffect(() => {

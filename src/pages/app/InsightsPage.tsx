@@ -79,29 +79,19 @@ export const InsightsPage: React.FC = () => {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Page Header */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="rounded-3xl bg-[#2A8E77] p-6 sm:p-8 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-[#0A6847] flex items-center justify-center">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-              AI Environmental Insights
-            </h2>
-          </div>
-          <p className="text-xs sm:text-sm text-slate-500 font-normal mt-1">
-            Understand patterns in your recent environmental exposure.
-          </p>
+          <h1 className="text-2xl sm:text-3xl font-bold font-['Space_Grotesk']">AI Insights</h1>
+          <p className="text-emerald-100 text-xs mt-1">Patterns & micro-trends in recent exposure</p>
         </div>
-
         <button
           type="button"
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className="px-3.5 py-2 text-xs font-semibold text-white bg-[#0A6847] hover:bg-[#085338] disabled:opacity-60 rounded-xl transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer self-start sm:self-auto"
+          className="px-5 py-2.5 rounded-full bg-white text-[#2A8E77] font-bold text-xs hover:bg-emerald-50 transition-all cursor-pointer shadow-xs self-start sm:self-auto disabled:opacity-60 flex items-center gap-1.5"
         >
           <RotateCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-          <span>{isRefreshing ? 'Analyzing Telemetry...' : 'Refresh Pattern Analysis'}</span>
+          <span>{isRefreshing ? 'Analyzing...' : 'Refresh'}</span>
         </button>
       </div>
 

@@ -26,6 +26,7 @@ import { MapPage } from './pages/app/MapPage';
 import { InsightsPage } from './pages/app/InsightsPage';
 import { DevicePage } from './pages/app/DevicePage';
 import { DoctorSharePage } from './pages/app/DoctorSharePage';
+import { MedicationPage } from './pages/app/MedicationPage';
 import { ProfilePage } from './pages/app/ProfilePage';
 import { SettingsPage } from './pages/app/SettingsPage';
 
@@ -117,6 +118,12 @@ const AppLayoutShell: React.FC<{ children: React.ReactNode }> = ({ children }) =
         subtitle: 'Structured clinical summary of ambient triggers and inhalation doses',
       };
     }
+    if (pathname.includes('/medication')) {
+      return {
+        title: 'AI Real-Time Dosage Predictor',
+        subtitle: 'Continuous environmental risk & patient biometric dosage calculations',
+      };
+    }
     if (pathname.includes('/profile')) {
       return {
         title: 'User Profile & Identity',
@@ -140,7 +147,7 @@ const AppLayoutShell: React.FC<{ children: React.ReactNode }> = ({ children }) =
   const lastUpdated = snapshot ? snapshot.lastUpdated : 'Just now';
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row text-slate-800">
+    <div className="min-h-screen bg-[#F4FAF8] flex flex-col md:flex-row text-slate-800">
       {/* Desktop Left Sidebar */}
       <div className="hidden md:block shrink-0 sticky top-0 h-screen">
         <Sidebar
@@ -251,6 +258,7 @@ export default function App() {
                     <Route path="insights" element={<InsightsPage />} />
                     <Route path="device" element={<DevicePage />} />
                     <Route path="doctor-share" element={<DoctorSharePage />} />
+                    <Route path="medication" element={<MedicationPage />} />
                     <Route path="profile" element={<ProfilePage />} />
                     <Route path="settings" element={<SettingsPage />} />
                     <Route path="*" element={<Navigate to="dashboard" replace />} />
@@ -269,6 +277,7 @@ export default function App() {
           <Route path="/insights" element={<Navigate to="/app/insights" replace />} />
           <Route path="/device" element={<Navigate to="/app/device" replace />} />
           <Route path="/doctor-share" element={<Navigate to="/app/doctor-share" replace />} />
+          <Route path="/medication" element={<Navigate to="/app/medication" replace />} />
           <Route path="/profile" element={<Navigate to="/app/profile" replace />} />
           <Route path="/settings" element={<Navigate to="/app/settings" replace />} />
 

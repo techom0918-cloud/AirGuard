@@ -76,24 +76,16 @@ export const SettingsPage: React.FC = () => {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Header */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="rounded-3xl bg-[#2A8E77] p-6 sm:p-8 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <SettingsIcon className="w-5 h-5 text-[#0A6847]" />
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight font-['Space_Grotesk']">
-              Platform & Hardware Preferences
-            </h2>
-          </div>
-          <p className="text-xs sm:text-sm text-slate-500 font-normal mt-1">
-            Configure telemetry notification thresholds, ESP32 sensor pod sound/LED cues, and data sharing
-          </p>
+          <h1 className="text-2xl sm:text-3xl font-bold font-['Space_Grotesk']">Settings</h1>
+          <p className="text-emerald-100 text-xs mt-1">Notifications, device cues & privacy preferences</p>
         </div>
-
         <button
           type="button"
           onClick={handleSave}
           disabled={isSaving}
-          className="px-4 py-2.5 rounded-xl font-bold text-white bg-[#0A6847] hover:bg-[#085338] shadow-xs flex items-center gap-2 text-xs sm:text-sm transition-all cursor-pointer self-start sm:self-auto"
+          className="px-5 py-2.5 rounded-full bg-white text-[#2A8E77] font-bold text-xs hover:bg-emerald-50 transition-all cursor-pointer shadow-xs self-start sm:self-auto disabled:opacity-60 flex items-center gap-2"
         >
           <Save className="w-4 h-4" />
           <span>{isSaving ? 'Saving...' : 'Save Preferences'}</span>

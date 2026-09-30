@@ -69,32 +69,24 @@ export const DoctorSharePage: React.FC = () => {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="rounded-3xl bg-[#2A8E77] p-6 sm:p-8 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <Share2 className="w-5 h-5 text-[#0A6847]" />
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight font-['Space_Grotesk']">
-              Physician & Clinical Environmental Summary
-            </h2>
-          </div>
-          <p className="text-xs sm:text-sm text-slate-500 font-normal mt-1">
-            Generate clean, evidence-based environmental trigger logs for review with your pulmonologist or allergist
-          </p>
+          <h1 className="text-2xl sm:text-3xl font-bold font-['Space_Grotesk']">Doctor Report</h1>
+          <p className="text-emerald-100 text-xs mt-1">Clinical environmental summary for physician review</p>
         </div>
-
         <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={handlePrint}
-            className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold text-xs transition-all cursor-pointer border border-white/30 flex items-center gap-1.5"
           >
             <Printer className="w-4 h-4" />
-            <span>Print Report</span>
+            <span>Print</span>
           </button>
           <button
             type="button"
             onClick={() => handleExport('pdf')}
-            className="px-3.5 py-2 text-xs font-semibold text-white bg-[#0A6847] hover:bg-[#085338] rounded-xl transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+            className="px-5 py-2 rounded-full bg-white text-[#2A8E77] font-bold text-xs hover:bg-emerald-50 transition-all cursor-pointer shadow-xs flex items-center gap-1.5"
           >
             <Download className="w-4 h-4" />
             <span>Export PDF</span>

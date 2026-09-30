@@ -94,27 +94,18 @@ export const AlertsPage: React.FC = () => {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Page Header */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="rounded-3xl bg-[#2A8E77] p-6 sm:p-8 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <Bell className="w-5 h-5 text-[#0A6847]" />
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight font-['Space_Grotesk']">
-              Environmental Risk & Device Alerts
-            </h2>
-          </div>
-          <p className="text-xs sm:text-sm text-slate-500 font-normal mt-1">
-            Predictive particulate warnings, localized spikes, and hardware connection state notices
-          </p>
+          <h1 className="text-2xl sm:text-3xl font-bold font-['Space_Grotesk']">Alerts</h1>
+          <p className="text-emerald-100 text-xs mt-1">Environmental & Device Alerts</p>
         </div>
-
         {newAlertsCount > 0 && (
           <button
             type="button"
             onClick={handleAcknowledgeAll}
-            className="px-3.5 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
+            className="px-5 py-2.5 rounded-full bg-white text-[#2A8E77] font-bold text-xs hover:bg-emerald-50 transition-all cursor-pointer shadow-xs self-start sm:self-auto"
           >
-            <Check className="w-3.5 h-3.5" />
-            <span>Acknowledge All ({newAlertsCount})</span>
+            Acknowledge All ({newAlertsCount})
           </button>
         )}
       </div>
@@ -148,11 +139,11 @@ export const AlertsPage: React.FC = () => {
                 onClick={() => setSeverityFilter(s)}
                 className={`px-2.5 py-1 rounded-lg capitalize font-semibold transition-colors cursor-pointer border ${
                   severityFilter === s
-                    ? 'bg-slate-900 text-white border-slate-900'
-                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    ? 'bg-[#2A8E77] text-white border-[#2A8E77]'
+                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-[#E8F4F0] hover:text-[#2A8E77]'
                 }`}
               >
-                {s === 'all' ? 'All Severities' : s}
+                {s === 'all' ? 'All' : s}
               </button>
             ))}
           </div>
@@ -168,11 +159,11 @@ export const AlertsPage: React.FC = () => {
                 onClick={() => setStatusFilter(st)}
                 className={`px-2.5 py-1 rounded-lg capitalize font-semibold transition-colors cursor-pointer border ${
                   statusFilter === st
-                    ? 'bg-[#0A6847] text-white border-[#0A6847]'
-                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    ? 'bg-[#2A8E77] text-white border-[#2A8E77]'
+                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-[#E8F4F0] hover:text-[#2A8E77]'
                 }`}
               >
-                {st === 'all' ? 'All Statuses' : st}
+                {st === 'all' ? 'All' : st}
               </button>
             ))}
           </div>
@@ -181,11 +172,11 @@ export const AlertsPage: React.FC = () => {
 
       {/* Alerts Feed */}
       {isLoading ? (
-        <LoadingState message="Checking alert queues..." subMessage="Synchronizing sensor alert events" />
+        <LoadingState message="Loading alerts..." />
       ) : alerts.length === 0 ? (
         <EmptyState
-          title="No alerts match your current filter"
-          description="Your surrounding environmental conditions are within stable parameters, and no hardware anomalies are reported."
+          title="No alerts"
+          description="No alerts match the current filter."
         />
       ) : (
         <div className="space-y-3">
@@ -283,7 +274,7 @@ export const AlertsPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleResolve(alert.id)}
-                        className="px-3 py-1.5 text-xs font-semibold text-white bg-[#0A6847] hover:bg-[#085338] rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                        className="px-3 py-1.5 text-xs font-semibold text-white bg-[#2A8E77] hover:bg-[#1e6b5a] rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         <span>Resolve</span>

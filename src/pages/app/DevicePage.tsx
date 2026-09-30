@@ -62,27 +62,19 @@ export const DevicePage: React.FC = () => {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Page Header */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="rounded-3xl bg-[#2A8E77] p-6 sm:p-8 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <Radio className="w-5 h-5 text-[#0A6847]" />
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-              Device Management & Sensors
-            </h2>
-          </div>
-          <p className="text-xs sm:text-sm text-slate-500 font-normal mt-1">
-            Hardware status for AirGuard Smart Inhaler sleeve and companion ESP32 environmental sensor pod
-          </p>
+          <h1 className="text-2xl sm:text-3xl font-bold font-['Space_Grotesk']">Device Diagnostics</h1>
+          <p className="text-emerald-100 text-xs mt-1">ESP32 Sensor Pod & Smart Inhaler Status</p>
         </div>
-
         <button
           type="button"
           onClick={handleRunDiagnostic}
           disabled={isDiagnosticRunning}
-          className="px-3.5 py-2 text-xs font-semibold text-white bg-[#0A6847] hover:bg-[#085338] disabled:opacity-60 rounded-xl transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer self-start sm:self-auto"
+          className="px-5 py-2.5 rounded-full bg-white text-[#2A8E77] font-bold text-xs hover:bg-emerald-50 transition-all cursor-pointer shadow-xs self-start sm:self-auto disabled:opacity-60 flex items-center gap-1.5"
         >
           <RotateCw className={`w-3.5 h-3.5 ${isDiagnosticRunning ? 'animate-spin' : ''}`} />
-          <span>{isDiagnosticRunning ? 'Running Self-Test...' : 'Run Sensor Diagnostic'}</span>
+          <span>{isDiagnosticRunning ? 'Testing...' : 'Run Diagnostic'}</span>
         </button>
       </div>
 

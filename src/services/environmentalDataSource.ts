@@ -4,11 +4,6 @@ import { mock24HourTrend } from '../data/mockAnalytics';
 
 export type DataSourceType = 'simulation' | 'hardware';
 
-/**
- * Common abstraction for environmental telemetry providers.
- * Allows switching between development mock/simulation telemetry and future ESP32 / Firebase streams
- * with zero modifications to consumer components.
- */
 export interface EnvironmentalDataSource {
   readonly type: DataSourceType;
   readonly isHardwareConnected: boolean;
@@ -16,11 +11,9 @@ export interface EnvironmentalDataSource {
   subscribeToSnapshot(callback: (snapshot: EnvironmentSnapshot) => void): () => void;
   getHistoricalTrend(timeframe?: '1H' | '6H' | '24H'): Promise<TrendDataPoint[]>;
   setSimulatedRisk?(level: RiskLevel): void;
+  updateCustomSnapshot?(partial: Partial<EnvironmentSnapshot>): void;
 }
 
-/**
- * Development & testing provider backed by structured mock environmental models.
- */
 export class MockSimulatorDataSource implements EnvironmentalDataSource {
   public readonly type: DataSourceType = 'simulation';
   public readonly isHardwareConnected: boolean = false;
@@ -29,7 +22,7 @@ export class MockSimulatorDataSource implements EnvironmentalDataSource {
   private listeners: Set<(snapshot: EnvironmentSnapshot) => void> = new Set();
 
   public async getLatestSnapshot(): Promise<EnvironmentSnapshot> {
-    await new Promise((resolve) => setTimeout(resolve, 80));
+    await new Promise((resolve) => setTimeout(resolve, 50));
     return { ...this.currentSnapshot };
   }
 
@@ -53,8 +46,17 @@ export class MockSimulatorDataSource implements EnvironmentalDataSource {
     this.listeners.forEach((listener) => listener({ ...this.currentSnapshot }));
   }
 
+  public updateCustomSnapshot(partial: Partial<EnvironmentSnapshot>): void {
+    this.currentSnapshot = {
+      ...this.currentSnapshot,
+      ...partial,
+      lastUpdated: 'Just now',
+    };
+    this.listeners.forEach((listener) => listener({ ...this.currentSnapshot }));
+  }
+
   public async getHistoricalTrend(timeframe: '1H' | '6H' | '24H' = '24H'): Promise<TrendDataPoint[]> {
-    await new Promise((resolve) => setTimeout(resolve, 60));
+    await new Promise((resolve) => setTimeout(resolve, 50));
     if (timeframe === '1H') {
       return [
         { time: '10:00', fullTime: '10:00 AM', pm25: 28, voc: 130, temperature: 26, humidity: 62, riskLevel: 'low' },

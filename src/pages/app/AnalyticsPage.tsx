@@ -36,28 +36,20 @@ export const AnalyticsPage: React.FC = () => {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Page Header */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-[#0A6847]" />
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-              Environmental Risk Analytics
-            </h2>
-          </div>
-          <p className="text-xs sm:text-sm text-slate-500 font-normal mt-1">
-            Sensor telemetry analytics, risk distributions, and environmental co-factor correlations
-          </p>
-        </div>
+      <div className="rounded-3xl bg-[#2A8E77] p-6 sm:p-8 text-white shadow-md">
+        <h1 className="text-2xl sm:text-3xl font-bold font-['Space_Grotesk']">Analytics</h1>
+        <p className="text-emerald-100 text-xs mt-1">Exposure metrics & environmental correlations</p>
+      </div>
 
-        {/* Timespan toggle */}
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl self-start sm:self-auto">
+      {/* Timespan toggle */}
+      <div className="flex items-center gap-1 bg-white border border-slate-200/70 p-1 rounded-xl self-start shadow-xs">
           <button
             type="button"
             onClick={() => setSelectedSpan('24h')}
             className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
               selectedSpan === '24h'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#2A8E77] text-white shadow-xs'
+                : 'text-slate-600 hover:text-[#2A8E77]'
             }`}
           >
             Past 24 Hours
@@ -67,14 +59,13 @@ export const AnalyticsPage: React.FC = () => {
             onClick={() => setSelectedSpan('7d')}
             className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
               selectedSpan === '7d'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#2A8E77] text-white shadow-xs'
+                : 'text-slate-600 hover:text-[#2A8E77]'
             }`}
           >
             Past 7 Days
           </button>
         </div>
-      </div>
 
       {/* Top 3 Summary Metrics for Quick Intelligence */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
