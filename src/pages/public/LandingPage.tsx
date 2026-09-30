@@ -316,7 +316,7 @@ export const LandingPage: React.FC = () => {
               <div className="text-xs font-black text-[#0A6847] mb-2">01 / HARDWARE</div>
               <h4 className="font-bold text-slate-900 text-sm">ESP32 & Sensors</h4>
               <p className="text-xs text-slate-500 mt-1">
-                Plantower laser PM2.5, Sensirion VOC, and SHT31 temperature/humidity sampling at 1 Hz.
+                Sharp GP2Y1010AU0F optical dust sensor, Sensirion VOC, and SHT31 temperature/humidity sampling at 1 Hz.
               </p>
             </div>
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">

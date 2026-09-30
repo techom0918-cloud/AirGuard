@@ -6,6 +6,8 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isDoctor: boolean;
+  role: 'patient' | 'doctor' | null;
   login: (email: string, pass: string, rememberMe?: boolean) => Promise<{ success: boolean; error?: string }>;
   register: (name: string, email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
@@ -72,12 +74,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return authService.forgotPassword(email);
   };
 
+  const role = session.user?.role ?? null;
+  const isDoctor = role === 'doctor';
+
   return (
     <AuthContext.Provider
       value={{
         user: session.user,
         isAuthenticated: session.isAuthenticated,
         isLoading,
+        isDoctor,
+        role,
         login,
         register,
         logout,

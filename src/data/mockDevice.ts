@@ -20,9 +20,9 @@ export const mockDeviceStatus: DeviceStatus = {
   sensors: [
     {
       id: 'sensor-pm',
-      name: 'Particulate Matter Sensor',
-      type: 'Optical Laser Scattering',
-      model: 'Plantower PMS5003',
+      name: 'Optical Dust Sensor (PM2.5/Dust)',
+      type: 'Infrared Optical Sensing',
+      model: 'Sharp GP2Y1010AU0F',
       status: 'standby',
       unit: 'µg/m³',
       latestReading: 'Standby (Waiting for device)',
@@ -95,9 +95,9 @@ export const mockConnectedDeviceStatus: DeviceStatus = {
   sensors: [
     {
       id: 'sensor-pm',
-      name: 'Particulate Matter Sensor',
-      type: 'Optical Laser Scattering',
-      model: 'Plantower PMS5003',
+      name: 'Optical Dust Sensor (PM2.5/Dust)',
+      type: 'Infrared Optical Sensing',
+      model: 'Sharp GP2Y1010AU0F',
       status: 'active',
       unit: 'µg/m³',
       latestReading: '32 µg/m³ (PM2.5) / 46 (PM10)',

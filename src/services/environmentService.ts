@@ -1,16 +1,16 @@
 import { EnvironmentSnapshot, RiskLevel, TrendDataPoint } from '../types';
 import { EnvironmentalDataSource, MockSimulatorDataSource } from './environmentalDataSource';
+import { fetchLiveTelemetry, telemetryToSnapshot, telemetryToTrendData, LiveTelemetryData } from './meteoService';
 
-// Active environmental telemetry data source (currently using development simulation)
 const activeDataSource: EnvironmentalDataSource = new MockSimulatorDataSource();
 
 export const environmentService = {
-  getDataSourceType(): 'simulation' | 'hardware' {
-    return activeDataSource.type;
+  getDataSourceType(): 'simulation' | 'hardware' | 'open-meteo' {
+    return 'open-meteo';
   },
 
   getDataSourceLabel(): string {
-    return activeDataSource.type === 'simulation' ? 'Data: Simulation Mode' : 'Data: Live Hardware';
+    return 'Data: Live Open-Meteo & Sharp Dust Sensor';
   },
 
   /**
@@ -18,6 +18,20 @@ export const environmentService = {
    */
   async getLatestSnapshot(): Promise<EnvironmentSnapshot> {
     return activeDataSource.getLatestSnapshot();
+  },
+
+  /**
+   * Fetches real live Open-Meteo Air Quality & Weather API snapshot for a specific coordinate.
+   */
+  async fetchLiveOpenMeteo(lat: number = 28.4623, lng: number = 77.4904, locationName: string = 'Current Vicinity'): Promise<{
+    snapshot: EnvironmentSnapshot;
+    trendData: TrendDataPoint[];
+    rawTelemetry: LiveTelemetryData;
+  }> {
+    const raw = await fetchLiveTelemetry(lat, lng, locationName);
+    const snapshot = telemetryToSnapshot(raw);
+    const trendData = telemetryToTrendData(raw);
+    return { snapshot, trendData, rawTelemetry: raw };
   },
 
   /**

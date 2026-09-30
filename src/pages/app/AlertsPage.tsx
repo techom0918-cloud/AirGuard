@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { RiskAlert, AlertSeverity, AlertStatus } from '../../types';
 import { alertService } from '../../services/alertService';
+import { useAuth } from '../../context/AuthContext';
 import { Badge } from '../../components/common/Badge';
 import { LoadingState } from '../../components/common/LoadingState';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -17,9 +18,12 @@ import {
   Filter,
   Clock,
   MapPin,
+  Stethoscope,
+  Lock,
 } from 'lucide-react';
 
 export const AlertsPage: React.FC = () => {
+  const { isDoctor } = useAuth();
   const [alerts, setAlerts] = useState<RiskAlert[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [severityFilter, setSeverityFilter] = useState<AlertSeverity | 'all'>('all');
@@ -273,15 +277,26 @@ export const AlertsPage: React.FC = () => {
                       Acknowledge
                     </button>
                   )}
+                  {/* Resolve button — DOCTOR ONLY */}
                   {alert.status !== 'resolved' && (
-                    <button
-                      type="button"
-                      onClick={() => handleResolve(alert.id)}
-                      className="px-3 py-1.5 text-xs font-semibold text-white bg-[#0A6847] hover:bg-[#085338] rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Resolve</span>
-                    </button>
+                    isDoctor ? (
+                      <button
+                        type="button"
+                        onClick={() => handleResolve(alert.id)}
+                        className="px-3 py-1.5 text-xs font-semibold text-white bg-[#0A6847] hover:bg-[#085338] rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Resolve</span>
+                      </button>
+                    ) : (
+                      <span
+                        title="Only doctors can resolve alerts"
+                        className="px-3 py-1.5 text-xs font-semibold text-slate-400 bg-slate-100 border border-slate-200 rounded-lg flex items-center gap-1 cursor-not-allowed select-none"
+                      >
+                        <Lock className="w-3 h-3" />
+                        <span>Doctor Only</span>
+                      </span>
+                    )
                   )}
                 </div>
               </div>

@@ -4,6 +4,7 @@ export const mockCurrentUser: User = {
   id: 'usr_demo_airguard',
   name: 'AirGuard Demo User',
   email: 'demo@airguard.local',
+  role: 'patient',
   avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80',
   accountCreatedAt: 'January 14, 2026',
   deviceAssignedId: 'ESP32-AG-8849',

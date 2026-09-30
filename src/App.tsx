@@ -108,7 +108,7 @@ const AppLayoutShell: React.FC<{ children: React.ReactNode }> = ({ children }) =
     if (pathname.includes('/device')) {
       return {
         title: 'ESP32 Device & Sensor Diagnostics',
-        subtitle: 'Plantower PMSA003I, Sensirion SGP40, SHT31, and MDI sleeve status',
+        subtitle: 'Sharp GP2Y1010AU0F, Sensirion SGP40, SHT31, and MDI sleeve status',
       };
     }
     if (pathname.includes('/doctor-share')) {

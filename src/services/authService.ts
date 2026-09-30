@@ -13,9 +13,35 @@ const DEV_USERS_STORAGE_KEY = 'airguard_dev_registered_users';
 
 type AuthListener = (session: AuthSession) => void;
 
-// Fixed development-only demo credentials (never for production use)
-const DEV_DEMO_EMAIL = 'demo@airguard.local';
-const DEV_DEMO_PASSWORD = 'AirGuard@123';
+// ── Demo Credentials ────────────────────────────────────────────────────────
+// Patient demo
+export const DEMO_PATIENT_EMAIL = 'patient@airguard.demo';
+const DEMO_PATIENT_PASSWORD = 'Patient@123';
+// Doctor demo
+export const DEMO_DOCTOR_EMAIL = 'doctor@airguard.demo';
+const DEMO_DOCTOR_PASSWORD = 'Doctor@123';
+// Legacy single demo (backwards compat)
+const DEMO_LEGACY_EMAIL = 'demo@airguard.local';
+const DEMO_LEGACY_PASSWORD = 'AirGuard@123';
+
+// Built-in demo user records
+const DEMO_PATIENT_USER: User = {
+  id: 'demo-patient-001',
+  name: 'Alex Sharma (Patient Demo)',
+  email: DEMO_PATIENT_EMAIL,
+  role: 'patient',
+  accountCreatedAt: 'September 1, 2026',
+  deviceAssignedId: 'ESP32-AG-DEMO-P',
+};
+
+const DEMO_DOCTOR_USER: User = {
+  id: 'demo-doctor-001',
+  name: 'Dr. Priya Mehta (Doctor Demo)',
+  email: DEMO_DOCTOR_EMAIL,
+  role: 'doctor',
+  accountCreatedAt: 'September 1, 2026',
+  deviceAssignedId: 'ESP32-AG-DEMO-D',
+};
 
 interface DevUserRecord {
   user: User;
@@ -131,6 +157,19 @@ class AuthService {
     }
   }
 
+  private saveRegisteredUser(user: User) {
+    try {
+      const records = this.getRegisteredRecords();
+      const existingIdx = records.findIndex((r) => r.user.email.toLowerCase() === user.email.toLowerCase());
+      if (existingIdx >= 0) {
+        records[existingIdx].user = user;
+        localStorage.setItem(DEV_USERS_STORAGE_KEY, JSON.stringify(records));
+      }
+    } catch {
+      // Ignore dev storage errors
+    }
+  }
+
   public async login(
     email: string,
     password: string,
@@ -149,14 +188,28 @@ class AuthService {
 
     let authenticatedUser: User;
 
-    // 1. Verify fixed development demo account credentials
-    if (cleanEmail === DEV_DEMO_EMAIL) {
-      if (password !== DEV_DEMO_PASSWORD) {
+    // 1. Patient demo account
+    if (cleanEmail === DEMO_PATIENT_EMAIL) {
+      if (password !== DEMO_PATIENT_PASSWORD) {
         return { success: false, error: 'Invalid email or password.' };
       }
-      authenticatedUser = { ...mockCurrentUser };
+      authenticatedUser = { ...DEMO_PATIENT_USER };
+    }
+    // 2. Doctor demo account
+    else if (cleanEmail === DEMO_DOCTOR_EMAIL) {
+      if (password !== DEMO_DOCTOR_PASSWORD) {
+        return { success: false, error: 'Invalid email or password.' };
+      }
+      authenticatedUser = { ...DEMO_DOCTOR_USER };
+    }
+    // 3. Legacy single demo (backwards compat)
+    else if (cleanEmail === DEMO_LEGACY_EMAIL) {
+      if (password !== DEMO_LEGACY_PASSWORD) {
+        return { success: false, error: 'Invalid email or password.' };
+      }
+      authenticatedUser = { ...DEMO_PATIENT_USER, email: DEMO_LEGACY_EMAIL };
     } else {
-      // 2. Check dev registered users
+      // 4. Check dev registered users
       const records = this.getRegisteredRecords();
       const record = records.find((r) => r.user.email.toLowerCase() === cleanEmail);
       if (!record) {
@@ -209,14 +262,15 @@ class AuthService {
       return { success: false, error: 'Password must be at least 8 characters in length.' };
     }
 
-    if (cleanEmail === DEV_DEMO_EMAIL) {
-      return { success: false, error: 'This email is reserved for the development demo account.' };
+    if (cleanEmail === DEMO_PATIENT_EMAIL || cleanEmail === DEMO_DOCTOR_EMAIL) {
+      return { success: false, error: 'This email is reserved for the demo accounts.' };
     }
 
     const newUser: User = {
       id: `usr_${Date.now()}`,
       name: cleanName,
       email: cleanEmail,
+      role: 'patient', // new registrations default to patient
       accountCreatedAt: new Date().toLocaleDateString('en-US', {
         month: 'long',
         day: 'numeric',

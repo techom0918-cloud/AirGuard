@@ -117,11 +117,11 @@ export const TechnologyPage: React.FC = () => {
                   <tbody className="divide-y divide-slate-100 text-slate-600">
                     <tr>
                       <td className="py-3.5 px-4 sm:px-6 font-bold text-slate-900">
-                        Particulate Matter (PM1.0, PM2.5, PM10)
+                        Particulate Matter & Airborne Dust (PM2.5)
                       </td>
-                      <td className="py-3.5 px-4 sm:px-6 font-mono text-slate-700">Plantower PMSA003I</td>
-                      <td className="py-3.5 px-4 sm:px-6">Laser optical light scattering</td>
-                      <td className="py-3.5 px-4 sm:px-6">0.3 to 1000 µg/m³ (±10%)</td>
+                      <td className="py-3.5 px-4 sm:px-6 font-mono text-slate-700">Sharp GP2Y1010AU0F</td>
+                      <td className="py-3.5 px-4 sm:px-6">Infrared optical dust scattering</td>
+                      <td className="py-3.5 px-4 sm:px-6">0.0 to 800 µg/m³ (±10%)</td>
                       <td className="py-3.5 px-4 sm:px-6">1.0 Hz continuous</td>
                     </tr>
                     <tr>

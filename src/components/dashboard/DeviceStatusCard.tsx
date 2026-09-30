@@ -15,12 +15,14 @@ import { StatusIndicator } from '../common/StatusIndicator';
 interface DeviceStatusCardProps {
   device: DeviceStatus;
   onNavigateToDevice?: () => void;
+  onViewOnMap?: () => void;
   id?: string;
 }
 
 export const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
   device,
   onNavigateToDevice,
+  onViewOnMap,
   id = 'device-status-card',
 }) => {
   return (
@@ -93,6 +95,40 @@ export const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
               <span className="text-xs sm:text-sm font-bold text-slate-800">
                 {device.connected ? `${device.batteryLevel}%` : 'Standby'}
               </span>
+            </div>
+          </div>
+
+          {/* Smart Inhaler GPS Module */}
+          <div className="p-3 rounded-xl bg-gradient-to-br from-sky-50 to-blue-50 border border-sky-200 col-span-2 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-sky-800 uppercase tracking-wider flex items-center gap-1">
+                <Radio className="w-3.5 h-3.5 text-sky-600 animate-pulse" />
+                Smart Inhaler GPS Tracker
+              </span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-200/80 text-sky-900 font-mono">
+                GPS Locked
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-2 pt-0.5">
+              <div>
+                <span className="text-xs font-black text-slate-900 block flex items-center gap-1">
+                  <span>📍</span> NIET Greater Noida
+                </span>
+                <span className="text-[10px] text-sky-700 font-semibold block">
+                  Proximity: 0m (At your side)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onViewOnMap) onViewOnMap();
+                  else if (onNavigateToDevice) onNavigateToDevice();
+                }}
+                className="px-2.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[11px] font-bold flex items-center gap-1 shadow-2xs transition-all cursor-pointer shrink-0"
+                title="View live device location on Trigger Map"
+              >
+                <span>💊 View on Map</span>
+              </button>
             </div>
           </div>
         </div>

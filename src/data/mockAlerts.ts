@@ -83,8 +83,8 @@ export const mockAlerts: RiskAlert[] = [
     date: 'Sep 12, 2026',
     severity: 'low',
     category: 'sensor',
-    title: 'Laser PM Sensor Self-Calibration',
-    message: 'Plantower optical chamber completed routine zero-point baseline calibration cycle.',
+    title: 'Optical Dust Sensor Self-Calibration',
+    message: 'Sharp GP2Y1010AU0F optical chamber completed routine zero-point baseline calibration cycle.',
     relatedReadings: [
       { metric: 'Baseline Offset', value: '0.2 µg/m³' },
       { metric: 'Status', value: 'Calibrated' },

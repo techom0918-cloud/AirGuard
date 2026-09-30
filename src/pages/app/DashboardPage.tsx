@@ -20,6 +20,7 @@ import {
   Layers,
   PlusCircle,
   Wifi,
+  Globe,
 } from 'lucide-react';
 import {
   EnvironmentSnapshot,
@@ -42,6 +43,9 @@ import { DeviceStatusCard } from '../../components/dashboard/DeviceStatusCard';
 import { LoadingState } from '../../components/common/LoadingState';
 import { Badge } from '../../components/common/Badge';
 
+import { detectBrowserLocation, reverseGeocodeLatLng } from '../../services/geoService';
+import { LiveTelemetryData } from '../../services/meteoService';
+
 interface DashboardPageProps {
   onSimulateRisk?: (level: RiskLevel) => void;
 }
@@ -53,35 +57,98 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
   const [events, setEvents] = useState<EnvironmentalEvent[]>([]);
   const [device, setDevice] = useState<DeviceStatus | null>(null);
   const [trendData, setTrendData] = useState<TrendDataPoint[]>([]);
+  const [liveTelemetry, setLiveTelemetry] = useState<LiveTelemetryData | null>(null);
   const [timeframe, setTimeframe] = useState<'1H' | '6H' | '24H'>('24H');
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Live Location & Refresh States
+  const [locationName, setLocationName] = useState<string>('NIET Greater Noida');
+  const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number }>({
+    lat: 28.4623,
+    lng: 77.4904,
+  });
+  const [isRefreshingLocation, setIsRefreshingLocation] = useState<boolean>(false);
 
   // Quick Action Feedback states
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [isSimulatingActuation, setIsSimulatingActuation] = useState(false);
 
-  // Subscribe to live environment updates
-  useEffect(() => {
-    const unsubEnv = environmentService.subscribeToSnapshot((newSnap) => {
-      setSnapshot(newSnap);
-    });
+  const handleLocateInhaler = () => {
+    setActionNotice(
+      `📍 Smart Inhaler GPS Beacon Locked: Located at ${locationName} (${locationCoords.lat.toFixed(4)}°, ${locationCoords.lng.toFixed(4)}°) • Proximity: 0m (At your side) • Battery 92%`
+    );
+    setTimeout(() => setActionNotice(null), 4500);
+  };
 
+  // 1. Separate Device Status Subscription (avoids synchronous re-render flicker during async init)
+  useEffect(() => {
     const unsubDevice = deviceService.subscribeToDeviceStatus((newDev) => {
       setDevice(newDev);
     });
+    return () => unsubDevice();
+  }, []);
 
-    Promise.all([
-      eventService.getEvents(),
-      environmentService.getHistoricalTrend(timeframe),
-    ]).then(([eventsData, trend]) => {
-      setEvents(eventsData);
-      setTrendData(trend);
+  // 2. Fetch live Open-Meteo Air Quality & Weather data for user location
+  const refreshLiveLocationData = async (forceGPS = false) => {
+    setIsRefreshingLocation(true);
+    let lat = locationCoords.lat;
+    let lng = locationCoords.lng;
+    let locName = locationName;
+
+    try {
+      // Fast GPS attempt with 4 second timeout
+      const gpsPromise = detectBrowserLocation();
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('GPS timeout')), forceGPS ? 8000 : 4000)
+      );
+
+      const loc = await Promise.race([gpsPromise, timeoutPromise]);
+      lat = loc.lat;
+      lng = loc.lng;
+      locName = loc.name || 'NIET Greater Noida';
+    } catch {
+      // Fallback: reverse geocode if locName is default
+      if (locName === 'My Live Location' || locName === 'Current Vicinity') {
+        const name = await reverseGeocodeLatLng(lat, lng);
+        if (name && !name.startsWith('Location (')) locName = name;
+        else locName = 'NIET Greater Noida';
+      }
+    }
+
+    setLocationCoords({ lat, lng });
+    setLocationName(locName);
+
+    try {
+      const [evtsData, devData, meteoData] = await Promise.all([
+        eventService.getEvents(),
+        deviceService.getDeviceStatus(),
+        environmentService.fetchLiveOpenMeteo(lat, lng, locName),
+      ]);
+
+      setEvents(evtsData);
+      setDevice(devData);
+      setSnapshot(meteoData.snapshot);
+      setTrendData(meteoData.trendData);
+      setLiveTelemetry(meteoData.rawTelemetry);
+    } catch (err) {
+      console.error('Failed to update live dashboard telemetry', err);
+    } finally {
       setIsLoading(false);
-    });
+      setIsRefreshingLocation(false);
+    }
+  };
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const init = async () => {
+      await refreshLiveLocationData(false);
+    };
+
+    init();
 
     return () => {
-      unsubEnv();
-      unsubDevice();
+      isCancelled = true;
     };
   }, []);
 
@@ -92,12 +159,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
   };
 
   const handleManualRefresh = async () => {
-    setActionNotice('Refreshing sensor observations...');
-    await environmentService.getLatestSnapshot();
-    setTimeout(() => {
-      setActionNotice('Sensor values updated.');
-      setTimeout(() => setActionNotice(null), 2500);
-    }, 400);
+    setActionNotice('Refreshing live GPS coordinates & Open-Meteo telemetry...');
+    await refreshLiveLocationData(true);
+    setActionNotice('Sensor values & live location telemetry updated.');
+    setTimeout(() => setActionNotice(null), 3000);
   };
 
   const handleSimulateInhalation = async () => {
@@ -131,8 +196,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
     return (
       <div className="py-12">
         <LoadingState
-          message="Synchronizing Environmental Sensors..."
-          subMessage="Reading Plantower PM2.5, Sensirion VOC, and SHT31 sensor bus via ESP32"
+          message="Synchronizing Live Environmental Sensors..."
+          subMessage="Fetching GPS coordinates, Open-Meteo atmospheric readings, and ESP32 hardware telemetry"
         />
       </div>
     );
@@ -175,8 +240,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
           </p>
         </div>
 
-        {/* Triple Connection Status Pill (Device, App, Data) */}
+        {/* Connection & Inhaler GPS Status Pills */}
         <div className="flex items-center gap-2 flex-wrap text-xs font-semibold">
+          {/* Smart Inhaler GPS Badge */}
+          <button
+            type="button"
+            onClick={handleLocateInhaler}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 text-sky-900 border border-sky-200 hover:bg-sky-100 transition-colors cursor-pointer"
+            title="Click to locate your Smart Inhaler via live GPS"
+          >
+            <span className="w-2 h-2 rounded-full bg-sky-500 animate-ping" />
+            <span>Inhaler GPS: Active (Live)</span>
+          </button>
+
           {/* Device */}
           <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border ${device.connected ? 'bg-emerald-50 text-emerald-900 border-emerald-200' : 'bg-slate-50 text-slate-700 border-slate-200'}`}>
             <Radio className={`w-3.5 h-3.5 ${device.connected ? 'text-[#0A6847]' : 'text-slate-400'}`} />
@@ -190,12 +266,90 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
           </div>
 
           {/* Data stream */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 text-slate-700 border border-slate-200">
-            <span className="w-2 h-2 rounded-full bg-amber-500" />
-            <span>Data: Simulation Mode</span>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200 font-semibold">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Data: Live Open-Meteo API Feed</span>
           </div>
         </div>
       </div>
+
+      {/* Live Open-Meteo Regional Atmospheric Telemetry Bar */}
+      {liveTelemetry && (
+        <div className="bg-emerald-900 text-white rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20 shrink-0 mt-0.5 sm:mt-0">
+              <Globe className="w-5 h-5 text-emerald-300" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-bold text-emerald-300 uppercase tracking-wider">
+                  Live Regional Weather & Air Quality
+                </span>
+                <span className="text-[11px] bg-emerald-800 text-emerald-100 px-2.5 py-0.5 rounded-lg font-bold border border-emerald-700 flex items-center gap-1">
+                  <span>📍</span> {locationName}
+                </span>
+                <span className="text-[10px] bg-sky-950/80 text-sky-200 px-2.5 py-0.5 rounded-lg font-bold border border-sky-700 flex items-center gap-1">
+                  <span>💊</span> Inhaler GPS Locked
+                </span>
+                <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${
+                  liveTelemetry.riskLevel === 'high'
+                    ? 'bg-red-500 text-white'
+                    : liveTelemetry.riskLevel === 'moderate'
+                    ? 'bg-amber-500 text-white'
+                    : 'bg-emerald-600 text-white'
+                }`}>
+                  {liveTelemetry.riskLevel === 'low' ? 'Good' : liveTelemetry.riskLevel === 'moderate' ? 'Moderate Risk' : 'High Risk'}
+                </span>
+              </div>
+              <p className="text-xs text-emerald-100/90 font-medium mt-1 flex items-center gap-2 flex-wrap">
+                <span>Coordinates: {locationCoords.lat.toFixed(4)}°, {locationCoords.lng.toFixed(4)}°</span>
+                <span>•</span>
+                <span>Synced at {liveTelemetry.timestamp}</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 flex-wrap lg:flex-nowrap">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-semibold flex-1">
+              <div className="bg-white/10 px-3 py-2 rounded-xl border border-white/10">
+                <span className="text-[10px] text-emerald-200 block uppercase font-bold">US AQI Index</span>
+                <span className="text-base font-extrabold text-white font-['Space_Grotesk']">
+                  {liveTelemetry.usAqi} <span className="text-[10px] font-normal text-emerald-200">AQI</span>
+                </span>
+              </div>
+              <div className="bg-white/10 px-3 py-2 rounded-xl border border-white/10">
+                <span className="text-[10px] text-emerald-200 block uppercase font-bold">Ambient PM2.5</span>
+                <span className="text-base font-extrabold text-white font-['Space_Grotesk']">
+                  {liveTelemetry.pm25} <span className="text-[10px] font-normal text-emerald-200">µg/m³</span>
+                </span>
+              </div>
+              <div className="bg-white/10 px-3 py-2 rounded-xl border border-white/10">
+                <span className="text-[10px] text-emerald-200 block uppercase font-bold">Ozone (O₃)</span>
+                <span className="text-base font-extrabold text-white font-['Space_Grotesk']">
+                  {liveTelemetry.ozone} <span className="text-[10px] font-normal text-emerald-200">µg/m³</span>
+                </span>
+              </div>
+              <div className="bg-white/10 px-3 py-2 rounded-xl border border-white/10">
+                <span className="text-[10px] text-emerald-200 block uppercase font-bold">Pressure</span>
+                <span className="text-base font-extrabold text-white font-['Space_Grotesk']">
+                  {liveTelemetry.pressure} <span className="text-[10px] font-normal text-emerald-200">hPa</span>
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => refreshLiveLocationData(true)}
+              disabled={isRefreshingLocation}
+              className="px-3.5 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+              title="Re-detect live GPS location and update Open-Meteo data"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingLocation ? 'animate-spin text-emerald-300' : ''}`} />
+              <span>{isRefreshingLocation ? 'Locating...' : 'Refresh GPS'}</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {actionNotice && (
         <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl text-xs flex items-center gap-2 animate-fade-in">
@@ -251,7 +405,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
             </div>
             <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100">
               <span className={snapshot.pm25.value > 35 ? 'text-amber-700 font-semibold' : 'text-emerald-700 font-semibold'}>
-                {snapshot.pm25.trend === 'rising' ? '↑ Rising' : '→ Stable'}
+                {snapshot.pm25.trend.direction === 'rising' ? '↑ Rising' : snapshot.pm25.trend.direction === 'falling' ? '↓ Falling' : '→ Stable'}
               </span>
               <span className="font-mono text-emerald-700 font-semibold text-[10px]">Active</span>
             </div>
@@ -462,7 +616,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
         <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
           Guardian Quick Controls
         </span>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs font-semibold">
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 text-xs font-semibold">
+          <button
+            type="button"
+            onClick={handleLocateInhaler}
+            className="p-2.5 rounded-xl bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-900 shadow-2xs flex items-center justify-center gap-1.5 transition-all cursor-pointer font-bold"
+            title="Locate Smart Inhaler via live GPS beacon"
+          >
+            <Radio className="w-3.5 h-3.5 text-sky-600 animate-pulse" />
+            <span>Find Inhaler GPS</span>
+          </button>
+
           <button
             type="button"
             onClick={handleManualRefresh}
@@ -523,6 +687,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
           <DeviceStatusCard
             device={device}
             onNavigateToDevice={() => navigate('/app/device')}
+            onViewOnMap={() => navigate('/app/map')}
           />
         </div>
       </div>
