@@ -276,12 +276,11 @@ export const medicationService = {
       const response = await fetch(`${API_BASE_URL}/predict`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...sensorInput, ...profileInput }),
+        body: JSON.stringify({ sensor: sensorInput, profile: profileInput }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        // Enrich backend JSON response with dosage metrics
         const clientCalc = evaluateClientAiDosage(sensorInput, profileInput);
         return {
           bmi: data.bmi ?? clientCalc.bmi,
@@ -290,8 +289,8 @@ export const medicationService = {
           model_suggestion: data.model_suggestion || clientCalc.model_suggestion,
           model_confidence: data.model_confidence || clientCalc.model_confidence,
           final_recommendation: data.final_recommendation || clientCalc.final_recommendation,
-          dosage_amount: clientCalc.dosage_amount,
-          dosage_detail: clientCalc.dosage_detail,
+          dosage_amount: data.dosage_amount || clientCalc.dosage_amount,
+          dosage_detail: data.dosage_detail || clientCalc.dosage_detail,
           note: data.note || clientCalc.note,
           source: 'python-ml',
           timestamp: new Date().toLocaleTimeString(),
