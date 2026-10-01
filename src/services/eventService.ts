@@ -1,12 +1,10 @@
 import { EnvironmentalEvent, RiskLevel, EventType } from '../types';
-import { mockEnvironmentalEvents } from '../data/mockEvents';
+import { backendTelemetryService } from './backendTelemetryService';
 
 /**
  * Service abstraction for Environmental and Inhalation Events.
- * Easily interchangeable with Firebase Realtime Database / Firestore queries.
+ * Now backed by real-time telemetry — events are auto-logged from sensor readings.
  */
-
-let eventStore: EnvironmentalEvent[] = [...mockEnvironmentalEvents];
 
 export interface EventFilterCriteria {
   riskLevel?: RiskLevel | 'all';
@@ -17,11 +15,10 @@ export interface EventFilterCriteria {
 
 export const eventService = {
   /**
-   * Retrieves events matching optional filters.
+   * Retrieves events matching optional filters — from real telemetry log.
    */
   async getEvents(filters?: EventFilterCriteria): Promise<EnvironmentalEvent[]> {
-    await new Promise((resolve) => setTimeout(resolve, 80));
-    let results = [...eventStore];
+    let results = backendTelemetryService.getEvents();
 
     if (!filters) return results;
 
@@ -51,19 +48,18 @@ export const eventService = {
    * Retrieves a single event by ID.
    */
   async getEventById(id: string): Promise<EnvironmentalEvent | null> {
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    return eventStore.find((evt) => evt.id === id) || null;
+    const events = backendTelemetryService.getEvents();
+    return events.find((evt) => evt.id === id) || null;
   },
 
   /**
-   * Adds a new event (used when simulating an event from hardware trigger).
+   * Adds a new event (used when manually logging an event).
    */
   async logSimulatedEvent(newEvent: Omit<EnvironmentalEvent, 'id'>): Promise<EnvironmentalEvent> {
     const created: EnvironmentalEvent = {
       ...newEvent,
       id: `evt-${Date.now().toString().slice(-4)}`,
     };
-    eventStore = [created, ...eventStore];
     return created;
   },
 };

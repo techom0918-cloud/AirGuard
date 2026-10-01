@@ -30,10 +30,10 @@ import { MedicationPage } from './pages/app/MedicationPage';
 import { ProfilePage } from './pages/app/ProfilePage';
 import { SettingsPage } from './pages/app/SettingsPage';
 
-import { EnvironmentSnapshot, RiskLevel, DeviceStatus } from './types';
+import { EnvironmentSnapshot, DeviceStatus } from './types';
 import { environmentService } from './services/environmentService';
 import { deviceService } from './services/deviceService';
-import { DevSimulatorDrawer } from './components/common/DevSimulatorDrawer';
+import { backendTelemetryService } from './services/backendTelemetryService';
 import { X } from 'lucide-react';
 
 const AppLayoutShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -42,9 +42,11 @@ const AppLayoutShell: React.FC<{ children: React.ReactNode }> = ({ children }) =
   const [device, setDevice] = useState<DeviceStatus | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [isDevSimulatorOpen, setIsDevSimulatorOpen] = useState<boolean>(false);
 
   useEffect(() => {
+    // Start real-time backend telemetry polling
+    backendTelemetryService.start();
+
     const unsubEnv = environmentService.subscribeToSnapshot((snap) => {
       setSnapshot(snap);
     });
@@ -62,10 +64,6 @@ const AppLayoutShell: React.FC<{ children: React.ReactNode }> = ({ children }) =
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
-
-  const handleSimulateRisk = (level: RiskLevel) => {
-    environmentService.setSimulatedRisk(level);
-  };
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -154,8 +152,6 @@ const AppLayoutShell: React.FC<{ children: React.ReactNode }> = ({ children }) =
           currentRiskLevel={currentRisk}
           batteryLevel={device?.batteryLevel}
           isDeviceConnected={device?.connected}
-          onSimulateRisk={handleSimulateRisk}
-          onOpenDevSimulator={() => setIsDevSimulatorOpen(true)}
         />
       </div>
 
@@ -186,12 +182,7 @@ const AppLayoutShell: React.FC<{ children: React.ReactNode }> = ({ children }) =
             currentRiskLevel={currentRisk}
             batteryLevel={device?.batteryLevel}
             isDeviceConnected={device?.connected}
-            onSimulateRisk={handleSimulateRisk}
             onCloseMobile={() => setIsMobileMenuOpen(false)}
-            onOpenDevSimulator={() => {
-              setIsMobileMenuOpen(false);
-              setIsDevSimulatorOpen(true);
-            }}
           />
         </div>
       </div>
@@ -206,20 +197,12 @@ const AppLayoutShell: React.FC<{ children: React.ReactNode }> = ({ children }) =
           isRefreshing={isRefreshing}
           onRefresh={handleRefresh}
           onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
-          onSimulateRisk={handleSimulateRisk}
         />
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
           {children}
         </main>
       </div>
-
-      {/* Developer Simulation Drawer */}
-      <DevSimulatorDrawer
-        isOpen={isDevSimulatorOpen}
-        onClose={() => setIsDevSimulatorOpen(false)}
-        currentRiskLevel={currentRisk}
-      />
 
       {/* Mobile Bottom Navigation */}
       <MobileNavigation />
@@ -232,8 +215,8 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Public Website Routes */}
-          <Route path="/" element={<LandingPage />} />
+          {/* Direct entry redirect to Login page */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/features" element={<FeaturesPage />} />
           <Route path="/how-it-works" element={<HowItWorksPage />} />
           <Route path="/technology" element={<TechnologyPage />} />

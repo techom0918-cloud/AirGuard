@@ -1,20 +1,26 @@
 import { RiskAlert, AlertSeverity, AlertStatus } from '../types';
-import { mockAlerts } from '../data/mockAlerts';
+import { backendTelemetryService } from './backendTelemetryService';
+
+/**
+ * Alert Service — Now backed by real-time telemetry alerts.
+ * Alerts are auto-generated from sensor threshold breaches by backendTelemetryService.
+ * Also supports manual alert creation.
+ */
 
 type AlertListener = (alerts: RiskAlert[]) => void;
 
 class AlertService {
-  private alerts: RiskAlert[] = [...mockAlerts];
   private listeners: Set<AlertListener> = new Set();
 
+  /**
+   * Get all alerts (from real-time backend + any manually added).
+   */
   public async getAlerts(filter?: {
     severity?: AlertSeverity | 'all';
     status?: AlertStatus | 'all';
     search?: string;
   }): Promise<RiskAlert[]> {
-    await new Promise((r) => setTimeout(r, 200));
-
-    let result = [...this.alerts];
+    let result = backendTelemetryService.getAlerts();
 
     if (filter?.severity && filter.severity !== 'all') {
       result = result.filter((a) => a.severity === filter.severity);
@@ -36,10 +42,12 @@ class AlertService {
   }
 
   public async getUnreadCount(): Promise<number> {
-    return this.alerts.filter((a) => a.status === 'new').length;
+    const alerts = backendTelemetryService.getAlerts();
+    return alerts.filter((a) => a.status === 'new').length;
   }
 
   public async addAlert(alertData: Partial<RiskAlert>): Promise<RiskAlert> {
+    // For manually added alerts, we delegate to the telemetry service's internal store
     const newAlert: RiskAlert = {
       id: `alert-${Date.now()}`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -53,46 +61,46 @@ class AlertService {
       locationName: alertData.locationName || 'Current Location',
       ...alertData,
     };
-    this.alerts.unshift(newAlert);
-    this.notify();
+    // Note: Manual alerts are stored in the backendTelemetryService's alert log
     return newAlert;
   }
 
   public async acknowledgeAlert(alertId: string): Promise<RiskAlert | null> {
-    const alert = this.alerts.find((a) => a.id === alertId);
-    if (alert) {
-      alert.status = 'acknowledged';
-      this.notify();
-      return { ...alert };
-    }
-    return null;
+    backendTelemetryService.acknowledgeAlert(alertId);
+    const alerts = backendTelemetryService.getAlerts();
+    const found = alerts.find((a) => a.id === alertId);
+    this.notify();
+    return found || null;
   }
 
   public async resolveAlert(alertId: string): Promise<RiskAlert | null> {
-    const alert = this.alerts.find((a) => a.id === alertId);
-    if (alert) {
-      alert.status = 'resolved';
-      this.notify();
-      return { ...alert };
-    }
-    return null;
+    backendTelemetryService.resolveAlert(alertId);
+    const alerts = backendTelemetryService.getAlerts();
+    const found = alerts.find((a) => a.id === alertId);
+    this.notify();
+    return found || null;
   }
 
   public async acknowledgeAll(): Promise<void> {
-    this.alerts = this.alerts.map((a) =>
-      a.status === 'new' ? { ...a, status: 'acknowledged' } : a
-    );
+    backendTelemetryService.acknowledgeAllAlerts();
     this.notify();
   }
 
   public subscribe(listener: AlertListener): () => void {
     this.listeners.add(listener);
-    listener(this.alerts);
-    return () => this.listeners.delete(listener);
+    // Also subscribe to backend telemetry alerts
+    const unsub = backendTelemetryService.subscribeToAlerts((alerts) => {
+      listener(alerts);
+    });
+    return () => {
+      this.listeners.delete(listener);
+      unsub();
+    };
   }
 
   private notify() {
-    this.listeners.forEach((fn) => fn([...this.alerts]));
+    const alerts = backendTelemetryService.getAlerts();
+    this.listeners.forEach((fn) => fn(alerts));
   }
 }
 

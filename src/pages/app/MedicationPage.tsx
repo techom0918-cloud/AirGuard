@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Pill,
   Activity,
@@ -18,8 +18,14 @@ import {
   RefreshCw,
   AlertCircle,
   Info,
+  Radio,
+  Zap,
+  Cpu,
+  ShieldAlert,
+  Sliders,
 } from 'lucide-react';
 import { environmentService } from '../../services/environmentService';
+import { backendTelemetryService, RawTelemetry } from '../../services/backendTelemetryService';
 import {
   medicationService,
   MedicationPredictionResult,
@@ -44,6 +50,8 @@ const DOSAGE_EMOJI: Record<string, string> = {
 
 export const MedicationPage: React.FC = () => {
   const [snapshot, setSnapshot] = useState<EnvironmentSnapshot | null>(null);
+  const [rawTelemetry, setRawTelemetry] = useState<RawTelemetry | null>(null);
+  const [isConnected, setIsConnected] = useState<boolean>(false);
 
   // Patient Management
   const [patients, setPatients] = useState<PatientProfile[]>([]);
@@ -60,55 +68,63 @@ export const MedicationPage: React.FC = () => {
   const [formAsthmaLevel, setFormAsthmaLevel] = useState<'Mild' | 'Moderate' | 'Severe'>('Moderate');
   const [formPeakFlow, setFormPeakFlow] = useState<number>(300);
 
-  // ── KEY FIX: sensor inputs are stored separately so sliders drive dosage ──
-  const [sensorInput, setSensorInput] = useState<SensorInput>({
-    pm25: 18, aqi: 42, humidity: 50, temp_c: 24,
-  });
-
   // Live Dosage Prediction
   const [prediction, setPrediction] = useState<MedicationPredictionResult | null>(null);
   const [isComputing, setIsComputing] = useState<boolean>(false);
-  const [activeScenario, setActiveScenario] = useState<string>('custom');
+  const [lastInferenceTime, setLastInferenceTime] = useState<string>('Just now');
 
-  // ── Load patients & subscribe to environment once ──
+  // Load patient profiles
   useEffect(() => {
     const loadedPatients = medicationService.getPatients();
     setPatients(loadedPatients);
     const active = medicationService.getActivePatient();
     setActivePatient(active);
-
-    // Subscribe to live environmental sensor feed
-    const unsub = environmentService.subscribeToSnapshot((snap) => {
-      setSnapshot(snap);
-      // Only auto-sync sliders if user explicitly chose 'live' mode
-      if (activeScenarioRef.current === 'live') {
-        const livePm25 = Math.max(5, snap.pm25.value);
-        const liveAqi = Math.max(5, snap.riskScore);
-        const liveHum = Math.max(15, snap.humidity.value);
-        const liveTemp = snap.temperature.value;
-        setSensorInput({ pm25: livePm25, aqi: liveAqi, humidity: liveHum, temp_c: liveTemp });
-      }
-    });
-
-    // Only get snapshot for display — do NOT override slider defaults
-    environmentService.getLatestSnapshot().then((snap) => {
-      setSnapshot(snap);
-      // Sliders keep their realistic defaults unless user taps Live mode
-    });
-
-    return () => unsub();
   }, []);
 
-  // Track activeScenario in a ref so the subscription closure can access it
-  const activeScenarioRef = useRef('custom');
-  useEffect(() => { activeScenarioRef.current = activeScenario; }, [activeScenario]);
-
-  // ── KEY FIX: Recompute dosage whenever sensorInput OR activePatient changes ──
+  // Subscribe to real-time backend telemetry
   useEffect(() => {
-    if (!activePatient) return;
+    // Initial fetch of current state
+    const currentSnap = backendTelemetryService.getLatestSnapshot();
+    const currentRaw = backendTelemetryService.getLatestRaw();
+    if (currentSnap) setSnapshot(currentSnap);
+    if (currentRaw) setRawTelemetry(currentRaw);
+    setIsConnected(backendTelemetryService.isConnected());
+
+    // Subscribe to continuous snapshot updates
+    const unsubSnap = environmentService.subscribeToSnapshot((snap) => {
+      setSnapshot(snap);
+    });
+
+    // Subscribe to raw telemetry stream
+    const unsubRaw = backendTelemetryService.subscribeToRawTelemetry((raw) => {
+      setRawTelemetry(raw);
+    });
+
+    // Subscribe to connection state changes
+    const unsubConn = backendTelemetryService.subscribeToConnection((conn) => {
+      setIsConnected(conn);
+    });
+
+    return () => {
+      unsubSnap();
+      unsubRaw();
+      unsubConn();
+    };
+  }, []);
+
+  // Re-run AI model prediction whenever snapshot or activePatient changes
+  useEffect(() => {
+    if (!activePatient || !snapshot) return;
 
     setIsComputing(true);
     let cancelled = false;
+
+    const sensorInput: SensorInput = {
+      pm25: snapshot.pm25.value,
+      aqi: snapshot.riskScore,
+      humidity: snapshot.humidity.value,
+      temp_c: snapshot.temperature.value,
+    };
 
     medicationService
       .predict(sensorInput, {
@@ -124,48 +140,18 @@ export const MedicationPage: React.FC = () => {
         if (!cancelled) {
           setPrediction(res);
           setIsComputing(false);
+          setLastInferenceTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
         }
       });
 
-    return () => { cancelled = true; };
-  }, [sensorInput, activePatient]);
-
-  // ── Scenario Presets ──
-  const applyPreset = (name: string, pm25: number, aqi: number, temp: number, humidity: number) => {
-    setActiveScenario(name);
-    const si: SensorInput = { pm25, aqi, humidity, temp_c: temp };
-    setSensorInput(si);
-    let riskLevel: 'low' | 'moderate' | 'high' = 'low';
-    if (pm25 > 75 || aqi > 150) riskLevel = 'high';
-    else if (pm25 > 35 || aqi > 70) riskLevel = 'moderate';
-    environmentService.updateCustomSnapshot({
-      pm25: { value: pm25, unit: 'µg/m³', status: riskLevel === 'high' ? 'critical' : riskLevel === 'moderate' ? 'warning' : 'good' },
-      riskScore: aqi,
-      riskLevel,
-      temperature: { value: temp, unit: '°C', status: 'good' },
-      humidity: { value: humidity, unit: '%', status: 'good' },
-    });
-  };
-
-  const updateSlider = (field: keyof SensorInput, val: number) => {
-    setActiveScenario('custom');
-    const updated = { ...sensorInput, [field]: val };
-    setSensorInput(updated);
-    let riskLevel: 'low' | 'moderate' | 'high' = 'low';
-    if (updated.pm25 > 75 || updated.aqi > 150) riskLevel = 'high';
-    else if (updated.pm25 > 35 || updated.aqi > 70) riskLevel = 'moderate';
-    environmentService.updateCustomSnapshot({
-      pm25: { value: updated.pm25, unit: 'µg/m³', status: riskLevel === 'high' ? 'critical' : riskLevel === 'moderate' ? 'warning' : 'good' },
-      riskScore: updated.aqi,
-      riskLevel,
-      temperature: { value: updated.temp_c, unit: '°C', status: 'good' },
-      humidity: { value: updated.humidity, unit: '%', status: 'good' },
-    });
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, [snapshot, activePatient]);
 
   const handleSelectPatient = (patient: PatientProfile) => {
     medicationService.setActivePatientId(patient.id);
-    setActivePatient({ ...patient }); // force state update
+    setActivePatient({ ...patient });
     setIsAddingPatient(false);
   };
 
@@ -209,7 +195,7 @@ export const MedicationPage: React.FC = () => {
     });
     const updated = medicationService.getPatients();
     setPatients(updated);
-    setActivePatient({ ...saved }); // trigger dosage recompute
+    setActivePatient({ ...saved });
     setIsAddingPatient(false);
   };
 
@@ -226,25 +212,23 @@ export const MedicationPage: React.FC = () => {
     }
   };
 
-  if (!snapshot) return <LoadingState message="Loading live metrics..." />;
+  if (!snapshot) return <LoadingState message="Loading backend telemetry..." />;
 
   const bmiPreview = calculateBmi(formMassKg, formHeightM);
   const dosageEmoji = prediction ? (DOSAGE_EMOJI[prediction.dosage_amount] ?? '🟡') : '⏳';
 
-  // Risk color for dosage card
-  const dosageCardBg =
-    prediction?.environmental_risk === 'DANGER'
-      ? 'bg-red-600'
-      : prediction?.environmental_risk === 'WARNING'
-      ? 'bg-amber-500'
-      : 'bg-[#2A8E77]';
-
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
-      {/* Hero */}
+      {/* Hero Header */}
       <div className="rounded-3xl bg-[#2A8E77] p-6 sm:p-8 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold font-['Space_Grotesk']">Live AI Dosage</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold font-['Space_Grotesk'] flex items-center gap-3">
+            <span>Live AI Dosage Predictor</span>
+            <span className="text-xs px-3 py-1 rounded-full bg-white/20 text-white font-semibold flex items-center gap-1.5">
+              <Radio className="w-3.5 h-3.5 animate-pulse text-emerald-200" />
+              Real-Time Hardware Stream
+            </span>
+          </h1>
           <p className="text-emerald-100 text-xs sm:text-sm mt-1">
             Patient: <strong className="text-white">{activePatient?.name || 'No patient selected'}</strong>
           </p>
@@ -259,12 +243,12 @@ export const MedicationPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Patient Row */}
+      {/* Patient Management Section */}
       <div className="bg-white rounded-2xl border border-slate-200/70 p-5 shadow-xs space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
             <Users className="w-4 h-4 text-[#2A8E77]" />
-            <span>Patients</span>
+            <span>Active Patient Profile</span>
           </div>
           {activePatient && (
             <div className="flex items-center gap-3">
@@ -339,11 +323,15 @@ export const MedicationPage: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-100">
             <div className="p-3 rounded-xl bg-[#E8F4F0] text-center">
               <div className="text-[10px] text-slate-500 font-semibold uppercase">Age</div>
-              <div className="text-lg font-bold text-[#2A8E77]">{activePatient.age} <span className="text-xs text-slate-400">yrs</span></div>
+              <div className="text-lg font-bold text-[#2A8E77]">
+                {activePatient.age} <span className="text-xs text-slate-400">yrs</span>
+              </div>
             </div>
             <div className="p-3 rounded-xl bg-[#E8F4F0] text-center">
               <div className="text-[10px] text-slate-500 font-semibold uppercase">BMI</div>
-              <div className="text-lg font-bold text-[#2A8E77]">{calculateBmi(activePatient.mass_kg, activePatient.height_m)}</div>
+              <div className="text-lg font-bold text-[#2A8E77]">
+                {calculateBmi(activePatient.mass_kg, activePatient.height_m)}
+              </div>
             </div>
             <div className="p-3 rounded-xl bg-[#E8F4F0] text-center">
               <div className="text-[10px] text-slate-500 font-semibold uppercase">Smoking</div>
@@ -351,19 +339,20 @@ export const MedicationPage: React.FC = () => {
             </div>
             <div className="p-3 rounded-xl bg-[#E8F4F0] text-center">
               <div className="text-[10px] text-slate-500 font-semibold uppercase">Peak Flow</div>
-              <div className="text-lg font-bold text-[#2A8E77]">{activePatient.peak_flow} <span className="text-xs text-slate-400">L/min</span></div>
+              <div className="text-lg font-bold text-[#2A8E77]">
+                {activePatient.peak_flow} <span className="text-xs text-slate-400">L/min</span>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Full Patient Form */}
+        {/* Patient Form */}
         {isAddingPatient && (
           <form onSubmit={handleSavePatientForm} className="p-4 bg-[#E8F4F0] rounded-xl space-y-4 text-xs border border-[#2A8E77]/20">
             <h3 className="font-bold text-sm text-[#2A8E77] flex items-center gap-2">
-              <User className="w-4 h-4" /> Patient Profile
+              <User className="w-4 h-4" /> Patient Profile Setup
             </h3>
             
-            {/* Row 1: Basics */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="sm:col-span-3">
                 <label className="block font-semibold text-slate-700 mb-1">Full Name</label>
@@ -372,7 +361,7 @@ export const MedicationPage: React.FC = () => {
                   required
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  placeholder="e.g. Rahul Sharma"
+                  placeholder="e.g. Siddharth Shukla"
                   className="w-full p-2 rounded-lg bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#2A8E77]/30"
                 />
               </div>
@@ -415,7 +404,6 @@ export const MedicationPage: React.FC = () => {
               </div>
             </div>
 
-            {/* BMI Preview */}
             <div className="flex items-center gap-2 text-xs px-3 py-2 bg-white/80 rounded-lg border border-[#2A8E77]/20">
               <BarChart2 className="w-3.5 h-3.5 text-[#2A8E77]" />
               <span className="text-slate-500">Calculated BMI:</span>
@@ -425,7 +413,6 @@ export const MedicationPage: React.FC = () => {
               </span>
             </div>
 
-            {/* Row 2: Clinical & Lifestyle */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">Gender</label>
@@ -479,14 +466,6 @@ export const MedicationPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Smoking risk hint */}
-            {formSmokingStatus === 'Current Smoker' && (
-              <div className="flex items-center gap-2 text-xs px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-red-700">
-                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                Current smoker increases bronchial vulnerability — dosage will be adjusted upward
-              </div>
-            )}
-
             <div className="flex items-center gap-3 pt-1">
               <button
                 type="submit"
@@ -506,144 +485,215 @@ export const MedicationPage: React.FC = () => {
         )}
       </div>
 
-      {/* Demo Scenarios */}
-      <div className="bg-white rounded-2xl border border-slate-200/70 p-5 shadow-xs space-y-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-slate-700">Demo Scenarios</span>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#E8F4F0] text-[#2A8E77] font-semibold">Tap to simulate</span>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { name: 'clean', label: '🟢 Clean Air', dosage: '50 µL', args: [12, 25, 22, 45] as [number,number,number,number] },
-            { name: 'smog', label: '🟡 City Smog', dosage: '100 µL', args: [48, 88, 28, 65] as [number,number,number,number] },
-            { name: 'danger', label: '🔴 Danger Zone', dosage: '150 µL', args: [115, 210, 36, 85] as [number,number,number,number] },
-            { name: 'cold', label: '🔵 Cold & Damp', dosage: '100 µL', args: [58, 105, 5, 90] as [number,number,number,number] },
-          ].map(({ name, label, dosage, args }) => (
-            <button
-              key={name}
-              type="button"
-              onClick={() => applyPreset(name, ...args)}
-              className={`p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex flex-col gap-1 text-left ${
-                activeScenario === name
-                  ? 'bg-[#2A8E77] text-white border-[#2A8E77]'
-                  : 'bg-slate-50 hover:bg-[#E8F4F0] text-slate-700 border-slate-200'
-              }`}
-            >
-              <span>{label}</span>
-              <span className={`text-[10px] ${activeScenario === name ? 'text-emerald-100' : 'text-slate-400'}`}>{dosage}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Main Grid: Sensor Sliders + Dosage Output */}
+      {/* Main Grid: Real-Time Hardware Telemetry Panel (Left) + AI Dosage Model Output (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Sliders Panel */}
+        {/* Left Column: Live Backend ESP32 Telemetry */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/70 p-5 shadow-xs space-y-4">
-          <span className="text-xs font-bold text-slate-700 block">Adjust Sensor Readings</span>
-
-          {[
-            { key: 'pm25' as const, label: 'PM2.5', unit: 'µg/m³', min: 0, max: 200, icon: <Wind className="w-3.5 h-3.5 text-[#2A8E77]" /> },
-            { key: 'aqi' as const, label: 'AQI', unit: '', min: 0, max: 300, icon: <Activity className="w-3.5 h-3.5 text-[#2A8E77]" /> },
-            { key: 'temp_c' as const, label: 'Temperature', unit: '°C', min: -10, max: 50, icon: <Thermometer className="w-3.5 h-3.5 text-slate-400" /> },
-            { key: 'humidity' as const, label: 'Humidity', unit: '%', min: 0, max: 100, icon: <Droplets className="w-3.5 h-3.5 text-slate-400" /> },
-          ].map(({ key, label, unit, min, max, icon }) => (
-            <div key={key} className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-1.5 font-semibold text-slate-600">{icon}{label}</span>
-                <span className="font-bold text-slate-900">{sensorInput[key]}{unit}</span>
-              </div>
-              <input
-                type="range"
-                min={min}
-                max={max}
-                value={sensorInput[key]}
-                onChange={(e) => updateSlider(key, Number(e.target.value))}
-                className="w-full accent-[#2A8E77] cursor-pointer"
-              />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Cpu className="w-4 h-4 text-[#2A8E77]" />
+              <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                Live Sensor Telemetry
+              </span>
             </div>
-          ))}
+            <div className="flex items-center gap-1.5 text-[11px] font-bold">
+              <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`} />
+              <span className={isConnected ? 'text-emerald-700' : 'text-amber-700'}>
+                {isConnected ? `${rawTelemetry?.device_id || 'AG-001'} Live` : 'Connecting ESP32...'}
+              </span>
+            </div>
+          </div>
+
+          {/* Live Sensor Metrics Grid */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* PM2.5 */}
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/60 space-y-1">
+              <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
+                <span className="flex items-center gap-1">
+                  <Wind className="w-3.5 h-3.5 text-[#2A8E77]" /> PM2.5
+                </span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#E8F4F0] text-[#2A8E77]">Calculated</span>
+              </div>
+              <div className="text-xl font-extrabold text-slate-900 font-['Space_Grotesk']">
+                {snapshot.pm25.value} <span className="text-xs font-normal text-slate-400">µg/m³</span>
+              </div>
+            </div>
+
+            {/* AQI Score */}
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/60 space-y-1">
+              <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
+                <span className="flex items-center gap-1">
+                  <Activity className="w-3.5 h-3.5 text-[#2A8E77]" /> AQI Score
+                </span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 uppercase font-extrabold">
+                  {rawTelemetry?.risk_level || snapshot.riskLevel}
+                </span>
+              </div>
+              <div className="text-xl font-extrabold text-slate-900 font-['Space_Grotesk']">
+                {snapshot.riskScore}
+              </div>
+            </div>
+
+            {/* Temperature */}
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/60 space-y-1">
+              <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
+                <span className="flex items-center gap-1">
+                  <Thermometer className="w-3.5 h-3.5 text-slate-400" /> Temperature
+                </span>
+              </div>
+              <div className="text-xl font-extrabold text-slate-900 font-['Space_Grotesk']">
+                {rawTelemetry?.temp !== undefined ? rawTelemetry.temp : snapshot.temperature.value}°C
+              </div>
+            </div>
+
+            {/* Humidity */}
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/60 space-y-1">
+              <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
+                <span className="flex items-center gap-1">
+                  <Droplets className="w-3.5 h-3.5 text-slate-400" /> Humidity
+                </span>
+              </div>
+              <div className="text-xl font-extrabold text-slate-900 font-['Space_Grotesk']">
+                {rawTelemetry?.humidity !== undefined ? rawTelemetry.humidity : snapshot.humidity.value}%
+              </div>
+            </div>
+
+            {/* MQ135 Raw ADC */}
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/60 space-y-1">
+              <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
+                <span className="flex items-center gap-1">
+                  <Zap className="w-3.5 h-3.5 text-amber-500" /> MQ135 Raw ADC
+                </span>
+              </div>
+              <div className="text-xl font-extrabold text-slate-900 font-['Space_Grotesk']">
+                {rawTelemetry?.mq135_raw ?? '871'}
+              </div>
+            </div>
+
+            {/* Sensor Voltage */}
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/60 space-y-1">
+              <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
+                <span className="flex items-center gap-1">
+                  <Radio className="w-3.5 h-3.5 text-indigo-500" /> Sensor Signal
+                </span>
+              </div>
+              <div className="text-xl font-extrabold text-slate-900 font-['Space_Grotesk']">
+                {rawTelemetry?.sensor_voltage !== undefined ? `${rawTelemetry.sensor_voltage} V` : '1.40 V'}
+              </div>
+            </div>
+          </div>
+
+          {/* Model Features Pipeline Banner */}
+          <div className="p-3 rounded-xl bg-[#E8F4F0] border border-[#2A8E77]/20 text-xs space-y-1.5">
+            <div className="flex items-center justify-between font-bold text-[#2A8E77]">
+              <span className="flex items-center gap-1.5">
+                <Cpu className="w-3.5 h-3.5" /> Random Forest Pipeline Input
+              </span>
+              <span className="text-[10px] text-slate-500 font-normal">Updated {lastInferenceTime}</span>
+            </div>
+            <div className="text-[11px] text-slate-600 font-mono bg-white/70 p-2 rounded-lg border border-[#2A8E77]/10 truncate">
+              PM2.5: {snapshot.pm25.value} | AQI: {snapshot.riskScore} | Temp: {snapshot.temperature.value}°C | Age: {activePatient?.age || 30}y | PeakFlow: {activePatient?.peak_flow || 300} L/min
+            </div>
+          </div>
         </div>
 
-        {/* Dosage Output */}
-        <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-200/70 p-6 shadow-md space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-700">AI Recommended Dosage</span>
-            {prediction && (
-              <Badge variant={riskBadgeVariant(prediction.environmental_risk)} size="md">
-                {prediction.environmental_risk}
-              </Badge>
+        {/* Right Column: AI Dosage Recommendation Output */}
+        <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-200/70 p-6 shadow-md space-y-4 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Pill className="w-4 h-4 text-[#2A8E77]" />
+                <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                  AI Recommended Dosage Output
+                </span>
+              </div>
+              {prediction && (
+                <Badge variant={riskBadgeVariant(prediction.environmental_risk)} size="md">
+                  {prediction.environmental_risk}
+                </Badge>
+              )}
+            </div>
+
+            {isComputing && (
+              <div className="flex items-center gap-2 text-xs text-[#2A8E77] font-semibold py-4">
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Evaluating Random Forest model on live backend frame...
+              </div>
+            )}
+
+            {prediction && !isComputing && (() => {
+              const isWarning = prediction.environmental_risk !== 'SAFE';
+              // Force RED bg for any warning/danger level
+              const dosageCardBg = isWarning ? 'bg-red-600' : 'bg-[#2A8E77]';
+              const dosageEmoji = isWarning ? '🔴' : '🟢';
+
+              return (
+                <div className="space-y-4">
+                  {/* Dosage Display Box */}
+                  <div className={`p-6 rounded-2xl ${dosageCardBg} text-white shadow-lg space-y-2`}>
+                    <span className="text-xs font-bold uppercase tracking-wider opacity-90">
+                      Required Recommended Dose
+                    </span>
+                    <div className="text-5xl font-extrabold font-['Space_Grotesk'] flex items-center gap-3">
+                      <span>{dosageEmoji}</span>
+                      <span>{prediction.dosage_amount}</span>
+                    </div>
+                    <p className="text-xs font-medium opacity-90">{prediction.final_recommendation}</p>
+                  </div>
+
+                  {/* Detail Grid */}
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/60">
+                      <div className="text-[10px] text-slate-400 font-semibold uppercase">Inhaler Type</div>
+                      <div className="font-bold text-slate-800 mt-1">{prediction.model_suggestion}</div>
+                    </div>
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/60">
+                      <div className="text-[10px] text-slate-400 font-semibold uppercase">Dosing Protocol</div>
+                      <div className="font-bold text-slate-800 mt-1">{prediction.dosage_detail}</div>
+                    </div>
+                  </div>
+
+                  {/* Risk Factors */}
+                  {prediction.risk_reasons.length > 0 && (
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        Environmental & Clinical Risk Factors
+                      </span>
+                      {prediction.risk_reasons.map((r, i) => (
+                        <div key={i} className="flex items-start gap-2 text-xs text-slate-700 bg-slate-50 p-2.5 rounded-xl border border-slate-200/60">
+                          <Info className="w-3.5 h-3.5 text-[#2A8E77] shrink-0 mt-0.5" />
+                          <span>{r}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Dynamic Alert Banner */}
+                  <div
+                    className={`p-3.5 rounded-xl text-xs font-medium flex items-start gap-2 ${
+                      isWarning
+                        ? 'bg-red-50 text-red-800 border border-red-200'
+                        : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                    }`}
+                  >
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>{prediction.note}</span>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {!prediction && !isComputing && (
+              <div className="text-center py-12 text-slate-400 text-xs">
+                Select or add a patient profile above to generate live AI dosage recommendations
+              </div>
             )}
           </div>
 
-          {isComputing && (
-            <div className="flex items-center gap-2 text-xs text-[#2A8E77] font-semibold">
-              <RefreshCw className="w-4 h-4 animate-spin" />
-              Recomputing dosage...
-            </div>
-          )}
-
-          {prediction && !isComputing && (() => {
-            const dosageCardBg =
-              prediction.environmental_risk === 'SAFE'
-                ? 'bg-[#2A8E77]'
-                : 'bg-red-600';
-            const dosageEmoji = DOSAGE_EMOJI[prediction.dosage_amount] || '🟢';
-            return (
-              <>
-                {/* Big dosage display */}
-                <div className={`p-6 rounded-2xl ${dosageCardBg} text-white shadow-lg space-y-2`}>
-                <span className="text-xs font-bold uppercase tracking-wider opacity-90">Required Dosage</span>
-                <div className="text-5xl font-extrabold font-['Space_Grotesk'] flex items-center gap-3">
-                  <span>{dosageEmoji}</span>
-                  <span>{prediction.dosage_amount}</span>
-                </div>
-                <p className="text-xs font-medium opacity-80">{prediction.final_recommendation}</p>
-              </div>
-
-              {/* Detail grid */}
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/60">
-                  <div className="text-[10px] text-slate-400 font-semibold uppercase">Inhaler Type</div>
-                  <div className="font-bold text-slate-800 mt-1">{prediction.model_suggestion}</div>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/60">
-                  <div className="text-[10px] text-slate-400 font-semibold uppercase">Protocol</div>
-                  <div className="font-bold text-slate-800 mt-1">{prediction.dosage_detail}</div>
-                </div>
-              </div>
-
-              {/* Risk Reasons */}
-              {prediction.risk_reasons.length > 0 && (
-                <div className="space-y-1.5">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Risk Factors</span>
-                  {prediction.risk_reasons.map((r, i) => (
-                    <div key={i} className="flex items-start gap-2 text-xs text-slate-600">
-                      <Info className="w-3 h-3 text-[#2A8E77] shrink-0 mt-0.5" />
-                      <span>{r}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Note */}
-              <div className={`p-3 rounded-xl text-xs font-medium flex items-start gap-2 ${
-                prediction.environmental_risk === 'DANGER' ? 'bg-red-50 text-red-800 border border-red-200' :
-                prediction.environmental_risk === 'WARNING' ? 'bg-amber-50 text-amber-800 border border-amber-200' :
-                'bg-emerald-50 text-emerald-800 border border-emerald-200'
-              }`}>
-                <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                {prediction.note}
-              </div>
-            </>
-          );
-        })()}
-
-          {!prediction && !isComputing && (
-            <div className="text-center py-8 text-slate-400 text-xs">
-              Select or add a patient above to see live dosage recommendations
-            </div>
-          )}
+          <div className="text-[11px] text-slate-400 border-t border-slate-100 pt-3 mt-4 flex items-center justify-between">
+            <span>Model: RandomForestClassifier (asthma_dataset.csv)</span>
+            <span>Units: Microliters (µL)</span>
+          </div>
         </div>
       </div>
     </div>

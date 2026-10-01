@@ -15,11 +15,11 @@ import {
   LogOut,
   SlidersHorizontal,
   Search,
-  User,
 } from 'lucide-react';
 import { RiskLevel } from '../../types';
-import { alertService } from '../../services/alertService';
 import { useAuth } from '../../context/AuthContext';
+import { alertService } from '../../services/alertService';
+import { medicationService } from '../../services/medicationService';
 
 interface SidebarProps {
   currentRiskLevel: RiskLevel;
@@ -38,6 +38,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { user, logout } = useAuth();
   const [unreadAlerts, setUnreadAlerts] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  const activePatientName = medicationService.getActivePatient()?.name || user?.name || 'Patient';
 
   const handleLogout = async () => {
     await logout();
@@ -139,10 +141,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className="flex items-center gap-2 text-slate-700 hover:text-slate-900 min-w-0"
         >
           <div className="w-7 h-7 rounded-lg bg-[#E8F4F0] text-[#2A8E77] flex items-center justify-center font-bold text-xs shrink-0">
-            {user?.name?.[0] || 'A'}
+            {activePatientName[0] || 'P'}
           </div>
           <span className="truncate font-semibold max-w-[100px]">
-            {user?.name || 'Patient'}
+            {activePatientName}
           </span>
         </Link>
 

@@ -26,6 +26,7 @@ import { RecentEvents } from '../../components/dashboard/RecentEvents';
 import { LoadingState } from '../../components/common/LoadingState';
 
 import { useAuth } from '../../context/AuthContext';
+import { backendTelemetryService } from '../../services/backendTelemetryService';
 
 /** Generate ticker messages based on current conditions */
 function buildTickerMessages(snap: EnvironmentSnapshot, dosage: string, patientName: string): string[] {
@@ -109,12 +110,16 @@ export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [snapshot, setSnapshot] = useState<EnvironmentSnapshot | null>(null);
+  // Pre-seed snapshot synchronously from the always-populated backendTelemetryService
+  const [snapshot, setSnapshot] = useState<EnvironmentSnapshot | null>(
+    () => backendTelemetryService.getLatestSnapshot()
+  );
   const [events, setEvents] = useState<EnvironmentalEvent[]>([]);
   const [device, setDevice] = useState<DeviceStatus | null>(null);
   const [trendData, setTrendData] = useState<TrendDataPoint[]>([]);
   const [timeframe, setTimeframe] = useState<'1H' | '6H' | '24H'>('24H');
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  // isLoading starts false because snapshot is immediately available
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [tickerMessages, setTickerMessages] = useState<string[]>([]);
 
   useEffect(() => {
@@ -139,14 +144,19 @@ export const DashboardPage: React.FC = () => {
       setTrendData(trend);
     } catch (err) {
       console.error('Failed to load dashboard data', err);
-    } finally {
-      setIsLoading(false);
     }
   };
 
   useEffect(() => {
     refreshDashboardData();
+    const unsub = environmentService.subscribeToSnapshot((snap) => {
+      setSnapshot(snap);
+      environmentService.getHistoricalTrend(timeframe).then(setTrendData);
+      eventService.getEvents().then(setEvents);
+    });
+    return () => unsub();
   }, [timeframe]);
+
 
   // Build ticker messages whenever snapshot changes
   useEffect(() => {
@@ -162,7 +172,7 @@ export const DashboardPage: React.FC = () => {
     setTickerMessages(buildTickerMessages(snapshot, dosage, patientName));
   }, [snapshot]);
 
-  if (isLoading || !snapshot || !device) {
+  if (isLoading || !snapshot) {
     return (
       <div className="py-12">
         <LoadingState message="Loading telemetry..." />
@@ -178,13 +188,15 @@ export const DashboardPage: React.FC = () => {
   };
   const rc = riskColors[riskLevel];
 
+  const activePatientName = medicationService.getActivePatient()?.name || user?.name || 'Patient';
+
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
       {/* Hero Welcome Banner */}
       <div className="rounded-3xl bg-[#2A8E77] p-6 sm:p-8 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold font-['Space_Grotesk']">
-            Good Day, {user?.name || 'Daniel Bruk'}
+            Good Day, {activePatientName}
           </h1>
           <p className="text-emerald-100 text-xs sm:text-sm mt-1">
             Live air quality monitoring &amp; dosage tracking
