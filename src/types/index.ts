@@ -13,12 +13,13 @@ export interface EnvironmentSnapshot {
   riskScore: number; // 0 to 100
   riskExplanation: string;
   pm25: {
-    value: number;
+    value: number | null;
     unit: string;
     status: 'optimal' | 'moderate' | 'elevated';
     trend: MetricTrend;
   };
   voc: {
+    name?: string;
     value: number;
     unit: string;
     status: 'optimal' | 'moderate' | 'elevated';

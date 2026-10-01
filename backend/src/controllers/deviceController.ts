@@ -5,7 +5,7 @@ import { ApiError } from '../middleware/errorHandler.js';
 export const deviceController = {
   async registerDevice(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { device_id, owner, registered_at } = req.body || {};
+      const { device_id, owner, registered_at, lat, lng } = req.body || {};
 
       if (!device_id || typeof device_id !== 'string' || device_id.trim() === '') {
         throw new ApiError(400, 'device_id is required and must be a non-empty string.');
@@ -23,6 +23,8 @@ export const deviceController = {
         device_id: device_id.trim(),
         owner: owner.trim(),
         registered_at,
+        ...(typeof lat === 'number' ? { lat } : {}),
+        ...(typeof lng === 'number' ? { lng } : {}),
       });
 
       res.status(201).json(created);

@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { readingService } from '../services/readingService.js';
 import { deviceService } from '../services/deviceService.js';
 import { ApiError } from '../middleware/errorHandler.js';
-import { RiskLevel } from '../types/schema.js';
+import { RiskLevel, ReadingDocument } from '../types/schema.js';
 
 const VALID_RISK_LEVELS: Set<string> = new Set(['SAFE', 'WARNING', 'DANGER']);
 
@@ -13,15 +13,29 @@ export const readingController = {
    */
   async saveSensorData(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { device_id, pm25, temp, humidity, risk_level, lat, lng, timestamp } = req.body || {};
+      const {
+        device_id,
+        pm25,
+        temp,
+        humidity,
+        risk_level,
+        lat,
+        lng,
+        timestamp,
+        mq135_raw,
+        sensor_voltage,
+        air_quality_score,
+      } = req.body || {};
 
       // 1. Payload validation
       if (!device_id || typeof device_id !== 'string' || device_id.trim() === '') {
         throw new ApiError(400, 'device_id is required and must be a non-empty string.');
       }
 
-      if (typeof pm25 !== 'number' || !Number.isFinite(pm25) || pm25 < 0) {
-        throw new ApiError(400, 'pm25 is required and must be a non-negative finite number.');
+      if (pm25 !== undefined && pm25 !== null) {
+        if (typeof pm25 !== 'number' || !Number.isFinite(pm25) || pm25 < 0) {
+          throw new ApiError(400, 'pm25 must be a non-negative finite number if provided.');
+        }
       }
 
       if (typeof temp !== 'number' || !Number.isFinite(temp) || temp < -50 || temp > 100) {
@@ -32,6 +46,24 @@ export const readingController = {
         throw new ApiError(400, 'humidity is required and must be a finite number between 0 and 100.');
       }
 
+      if (mq135_raw !== undefined && mq135_raw !== null) {
+        if (typeof mq135_raw !== 'number' || !Number.isFinite(mq135_raw) || mq135_raw < 0) {
+          throw new ApiError(400, 'mq135_raw must be a non-negative finite number if provided.');
+        }
+      }
+
+      if (sensor_voltage !== undefined && sensor_voltage !== null) {
+        if (typeof sensor_voltage !== 'number' || !Number.isFinite(sensor_voltage) || sensor_voltage < 0) {
+          throw new ApiError(400, 'sensor_voltage must be a non-negative finite number if provided.');
+        }
+      }
+
+      if (air_quality_score !== undefined && air_quality_score !== null) {
+        if (typeof air_quality_score !== 'number' || !Number.isFinite(air_quality_score) || air_quality_score < 0) {
+          throw new ApiError(400, 'air_quality_score must be a non-negative finite number if provided.');
+        }
+      }
+
       if (!risk_level || !VALID_RISK_LEVELS.has(risk_level)) {
         if (['low', 'moderate', 'high'].includes(risk_level)) {
           throw new ApiError(400, `INVALID_RISK_LEVEL: Legacy risk level '${risk_level}' is not supported. Master risk vocabulary requires SAFE, WARNING, or DANGER.`);
@@ -39,8 +71,12 @@ export const readingController = {
         throw new ApiError(400, "risk_level is required and must be one of 'SAFE', 'WARNING', 'DANGER'.");
       }
 
-      if (!timestamp || isNaN(Date.parse(timestamp))) {
-        throw new ApiError(400, 'timestamp is required and must be a valid timestamp string.');
+      // Generate server timestamp if omitted
+      let resolvedTimestamp: string;
+      if (timestamp && typeof timestamp === 'string' && !isNaN(Date.parse(timestamp))) {
+        resolvedTimestamp = new Date(timestamp).toISOString();
+      } else {
+        resolvedTimestamp = new Date().toISOString();
       }
 
       const cleanDeviceId = device_id.trim();
@@ -75,16 +111,30 @@ export const readingController = {
       }
 
       // 4. Save reading using verified Firestore service
-      const created = await readingService.saveReading({
+      const readingPayload: ReadingDocument = {
         device_id: cleanDeviceId,
-        pm25,
         temp,
         humidity,
         risk_level: risk_level as RiskLevel,
         lat: resolvedLat,
         lng: resolvedLng,
-        timestamp: new Date(timestamp).toISOString(),
-      });
+        timestamp: resolvedTimestamp,
+      };
+
+      if (pm25 !== undefined && pm25 !== null) {
+        readingPayload.pm25 = pm25;
+      }
+      if (mq135_raw !== undefined && mq135_raw !== null) {
+        readingPayload.mq135_raw = mq135_raw;
+      }
+      if (sensor_voltage !== undefined && sensor_voltage !== null) {
+        readingPayload.sensor_voltage = sensor_voltage;
+      }
+      if (air_quality_score !== undefined && air_quality_score !== null) {
+        readingPayload.air_quality_score = air_quality_score;
+      }
+
+      const created = await readingService.saveReading(readingPayload);
 
       res.status(201).json(created);
     } catch (error) {

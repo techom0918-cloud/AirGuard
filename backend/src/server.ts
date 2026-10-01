@@ -53,8 +53,8 @@ app.use(errorHandler);
 // Start Server if executed directly
 const isMain = process.argv[1] && (process.argv[1].endsWith('server.ts') || process.argv[1].endsWith('server.js'));
 if (isMain && process.env.NODE_ENV !== 'test') {
-  app.listen(config.port, () => {
-    console.log(`[AirGuard Backend] Server running on port ${config.port} (${config.nodeEnv})`);
+  app.listen(config.port, '0.0.0.0', () => {
+    console.log(`[AirGuard Backend] Server running on 0.0.0.0:${config.port} (${config.nodeEnv})`);
     console.log(`[AirGuard Backend] Health check endpoint: http://localhost:${config.port}/health`);
   });
 }

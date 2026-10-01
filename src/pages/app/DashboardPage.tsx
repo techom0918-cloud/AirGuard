@@ -129,11 +129,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
     );
   }
 
-  // Derive PM1.0 and PM10 values realistically from PM2.5 for the full sensor array
-  const pm1Value = Math.round(snapshot.pm25.value * 0.65);
-  const pm10Value = Math.round(snapshot.pm25.value * 1.45);
+  // Derive PM1.0 and PM10 values realistically from PM2.5 for the full sensor array (if PM2.5 is available)
+  const hasPm25 = typeof snapshot.pm25.value === 'number' && Number.isFinite(snapshot.pm25.value);
+  const pm1Value = hasPm25 ? Math.round(snapshot.pm25.value! * 0.65) : 'N/A';
+  const pm10Value = hasPm25 ? Math.round(snapshot.pm25.value! * 1.45) : 'N/A';
 
-  const getPM25Variant = (val: number) => {
+  const getPM25Variant = (val: number | null) => {
+    if (val === null || val === undefined) return 'neutral';
     if (val <= 35) return 'green';
     if (val <= 75) return 'amber';
     return 'red';
@@ -227,30 +229,30 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
           <MetricCard
             id="metric-pm25"
             name="PM2.5 Fine Dust"
-            value={snapshot.pm25.value}
-            unit="µg/m³"
-            status={snapshot.pm25.value > 35 ? 'Elevated' : 'Optimal'}
+            value={hasPm25 ? snapshot.pm25.value! : 'Not measured'}
+            unit={hasPm25 ? 'µg/m³' : ''}
+            status={hasPm25 ? (snapshot.pm25.value! > 35 ? 'Elevated' : 'Optimal') : 'N/A'}
             trend={snapshot.pm25.trend}
             icon={Wind}
-            subLabel="Fine inhalable particulates"
+            subLabel={hasPm25 ? 'Fine inhalable particulates' : 'PM2.5 sensor disabled'}
             thresholdMax={75}
-            thresholdGuide="Ref: 35 µg/m³"
+            thresholdGuide={hasPm25 ? 'Ref: 35 µg/m³' : undefined}
             badgeVariant={getPM25Variant(snapshot.pm25.value)}
             featured={true}
           />
 
-          {/* VOC Gas Load */}
+          {/* VOC Gas Load / Air Quality Score */}
           <MetricCard
             id="metric-voc"
-            name="VOC Gas Load"
+            name={snapshot.voc.name || 'VOC Gas Load'}
             value={snapshot.voc.value}
-            unit="ppb"
+            unit={snapshot.voc.unit}
             status={snapshot.voc.status === 'optimal' ? 'Optimal' : snapshot.voc.status === 'moderate' ? 'Caution' : 'Elevated'}
             trend={snapshot.voc.trend}
             icon={Flame}
-            subLabel="Volatile organic gases"
+            subLabel={snapshot.voc.name === 'Air Quality Score' ? 'MQ135 Gas proxy score' : 'Volatile organic gases'}
             thresholdMax={500}
-            thresholdGuide="Ref: 300 ppb"
+            thresholdGuide={snapshot.voc.name === 'Air Quality Score' ? 'Proxy air quality score' : 'Ref: 300 ppb'}
             badgeVariant={getVOCVariant(snapshot.voc.value)}
           />
 
@@ -259,13 +261,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
             id="metric-pm1"
             name="PM1.0 Ultra-Fine"
             value={pm1Value}
-            unit="µg/m³"
-            status="Optimal"
+            unit={hasPm25 ? 'µg/m³' : ''}
+            status={hasPm25 ? 'Optimal' : 'N/A'}
             trend={{ direction: 'stable', delta: '0.0', isPositive: true }}
             icon={Wind}
-            subLabel="Sub-micron particulate load"
+            subLabel={hasPm25 ? 'Sub-micron particulate load' : 'Sensor not available'}
             thresholdMax={50}
-            badgeVariant="green"
+            badgeVariant={hasPm25 ? 'green' : 'neutral'}
           />
 
           {/* PM10 Coarse Dust */}
@@ -273,13 +275,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
             id="metric-pm10"
             name="PM10 Coarse Dust"
             value={pm10Value}
-            unit="µg/m³"
-            status="Normal"
+            unit={hasPm25 ? 'µg/m³' : ''}
+            status={hasPm25 ? 'Normal' : 'N/A'}
             trend={{ direction: 'stable', delta: '0.0', isPositive: true }}
             icon={Wind}
-            subLabel="Coarse respirable dust"
+            subLabel={hasPm25 ? 'Coarse respirable dust' : 'Sensor not available'}
             thresholdMax={100}
-            badgeVariant="green"
+            badgeVariant={hasPm25 ? 'green' : 'neutral'}
           />
 
           {/* Temperature */}

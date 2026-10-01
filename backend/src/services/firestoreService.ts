@@ -29,8 +29,25 @@ export const validateReading = (reading: any): void => {
   if (!reading.device_id || typeof reading.device_id !== 'string' || reading.device_id.trim() === '') {
     throw new Error('INVALID_DEVICE_ID: device_id must be a non-empty string.');
   }
-  if (typeof reading.pm25 !== 'number' || !Number.isFinite(reading.pm25) || reading.pm25 < 0) {
-    throw new Error('INVALID_PM25: pm25 must be a non-negative finite number.');
+  if (reading.pm25 !== undefined && reading.pm25 !== null) {
+    if (typeof reading.pm25 !== 'number' || !Number.isFinite(reading.pm25) || reading.pm25 < 0) {
+      throw new Error('INVALID_PM25: pm25 must be a non-negative finite number.');
+    }
+  }
+  if (reading.mq135_raw !== undefined && reading.mq135_raw !== null) {
+    if (typeof reading.mq135_raw !== 'number' || !Number.isFinite(reading.mq135_raw) || reading.mq135_raw < 0) {
+      throw new Error('INVALID_MQ135_RAW: mq135_raw must be a non-negative finite number.');
+    }
+  }
+  if (reading.sensor_voltage !== undefined && reading.sensor_voltage !== null) {
+    if (typeof reading.sensor_voltage !== 'number' || !Number.isFinite(reading.sensor_voltage) || reading.sensor_voltage < 0) {
+      throw new Error('INVALID_SENSOR_VOLTAGE: sensor_voltage must be a non-negative finite number.');
+    }
+  }
+  if (reading.air_quality_score !== undefined && reading.air_quality_score !== null) {
+    if (typeof reading.air_quality_score !== 'number' || !Number.isFinite(reading.air_quality_score) || reading.air_quality_score < 0) {
+      throw new Error('INVALID_AIR_QUALITY_SCORE: air_quality_score must be a non-negative finite number.');
+    }
   }
   if (typeof reading.temp !== 'number' || !Number.isFinite(reading.temp) || reading.temp < -50 || reading.temp > 100) {
     throw new Error('INVALID_TEMPERATURE: temp must be a finite number between -50 and 100.');

@@ -13,13 +13,16 @@ import {
  */
 export interface BackendReadingDto {
   device_id: string;
-  pm25: number;
+  pm25?: number | null;
   temp: number;
   humidity: number;
   risk_level: string;
   lat: number;
   lng: number;
   timestamp: string;
+  mq135_raw?: number;
+  sensor_voltage?: number;
+  air_quality_score?: number;
 }
 
 export interface BackendAlertDto {
@@ -65,21 +68,39 @@ export function normalizeRiskLevel(rawRisk: string | undefined): RiskLevel {
  */
 
 export function readingToSnapshot(reading: BackendReadingDto): EnvironmentSnapshot {
-  const pm25Value = typeof reading?.pm25 === 'number' && Number.isFinite(reading.pm25) ? reading.pm25 : 0;
+  const hasPm25 = typeof reading?.pm25 === 'number' && Number.isFinite(reading.pm25);
+  const pm25Value = hasPm25 ? (reading.pm25 as number) : null;
   const tempValue = typeof reading?.temp === 'number' && Number.isFinite(reading.temp) ? reading.temp : 24;
   const humidityValue = typeof reading?.humidity === 'number' && Number.isFinite(reading.humidity) ? reading.humidity : 50;
   const riskLevel: RiskLevel = normalizeRiskLevel(reading?.risk_level);
 
-  const riskScore = Math.min(100, Math.max(0, Math.round(pm25Value * 0.85)));
+  const hasAirQualityScore = typeof reading?.air_quality_score === 'number' && Number.isFinite(reading.air_quality_score);
+  const vocName = hasAirQualityScore ? 'Air Quality Score' : 'VOC Gas Load';
+  const vocValue = hasAirQualityScore ? reading.air_quality_score! : 120;
+  const vocUnit = hasAirQualityScore ? 'score' : 'ppb';
+  const vocStatus = hasAirQualityScore
+    ? (vocValue > 200 ? 'elevated' : vocValue > 100 ? 'moderate' : 'optimal')
+    : 'optimal';
+
+  let riskScore: number;
+  if (hasAirQualityScore) {
+    riskScore = Math.min(100, Math.max(0, Math.round((reading.air_quality_score! / 300) * 100)));
+  } else if (hasPm25) {
+    riskScore = Math.min(100, Math.max(0, Math.round(pm25Value! * 0.85)));
+  } else {
+    riskScore = riskLevel === 'high' ? 85 : riskLevel === 'moderate' ? 50 : 20;
+  }
 
   const riskExplanation =
     riskLevel === 'high'
-      ? 'Elevated airborne particulate density detected. Take inhaler precautions.'
+      ? (hasAirQualityScore ? 'Elevated air quality score detected. Take inhaler precautions.' : 'Elevated airborne particulate density detected. Take inhaler precautions.')
       : riskLevel === 'moderate'
-      ? 'Moderate particulate presence logged. Monitor environmental conditions.'
-      : 'Optimal baseline particulate and ambient levels.';
+      ? (hasAirQualityScore ? 'Moderate gas/air quality score logged. Monitor environmental conditions.' : 'Moderate particulate presence logged. Monitor environmental conditions.')
+      : 'Optimal baseline air quality and ambient levels.';
 
-  const pm25Status = pm25Value > 55 ? 'elevated' : pm25Value > 35 ? 'moderate' : 'optimal';
+  const pm25Status = hasPm25
+    ? (pm25Value! > 55 ? 'elevated' : pm25Value! > 35 ? 'moderate' : 'optimal')
+    : 'optimal';
   const tempStatus = tempValue > 30 ? 'warm' : tempValue < 18 ? 'cool' : 'comfortable';
   const humidityStatus = humidityValue > 60 ? 'elevated' : humidityValue < 30 ? 'dry' : 'ideal';
 
@@ -96,14 +117,15 @@ export function readingToSnapshot(reading: BackendReadingDto): EnvironmentSnapsh
     riskExplanation,
     pm25: {
       value: pm25Value,
-      unit: 'µg/m³',
+      unit: hasPm25 ? 'µg/m³' : '',
       status: pm25Status,
       trend: { direction: 'stable', delta: '0', isPositive: true },
     },
     voc: {
-      value: 120,
-      unit: 'ppb',
-      status: 'optimal',
+      name: vocName,
+      value: vocValue,
+      unit: vocUnit,
+      status: vocStatus,
       trend: { direction: 'stable', delta: '0', isPositive: true },
     },
     temperature: {
@@ -124,16 +146,18 @@ export function readingToSnapshot(reading: BackendReadingDto): EnvironmentSnapsh
       status: 'normal',
     },
     pm10: {
-      value: Math.round(pm25Value * 1.4),
-      unit: 'µg/m³',
-      status: pm25Value > 55 ? 'moderate' : 'optimal',
+      value: hasPm25 ? Math.round(pm25Value! * 1.4) : 0,
+      unit: hasPm25 ? 'µg/m³' : '',
+      status: hasPm25 && pm25Value! > 55 ? 'moderate' : 'optimal',
     },
     predictiveTrend: {
       status: riskLevel === 'high' ? 'Risk Rising' : riskLevel === 'moderate' ? 'Conditions Stable' : 'Risk Decreasing',
       direction: riskLevel === 'high' ? 'rising' : 'stable',
       changeSummary: `Telemetry snapshot recorded for device ${reading.device_id}`,
-      explanation: 'Continuous optical sensor & barometric telemetry active.',
-      recentParticulateValues: [pm25Value],
+      explanation: hasAirQualityScore
+        ? 'MQ135 air quality gas telemetry active.'
+        : 'Continuous optical sensor & barometric telemetry active.',
+      recentParticulateValues: hasPm25 ? [pm25Value!] : [],
       timeframe: 'Latest Telemetry',
     },
   };
@@ -149,7 +173,9 @@ export function readingToTrendPoint(reading: BackendReadingDto): TrendDataPoint 
     time: formattedTime,
     fullTime: reading.timestamp,
     pm25: typeof reading.pm25 === 'number' && Number.isFinite(reading.pm25) ? reading.pm25 : 0,
-    voc: 120,
+    voc: typeof reading.air_quality_score === 'number' && Number.isFinite(reading.air_quality_score)
+      ? reading.air_quality_score
+      : 120,
     temperature: typeof reading.temp === 'number' && Number.isFinite(reading.temp) ? reading.temp : 24,
     humidity: typeof reading.humidity === 'number' && Number.isFinite(reading.humidity) ? reading.humidity : 50,
     riskLevel: normalizeRiskLevel(reading.risk_level),
@@ -169,6 +195,7 @@ export function readingToEvent(reading: BackendReadingDto): EnvironmentalEvent {
   const lat = typeof reading.lat === 'number' && Number.isFinite(reading.lat) ? reading.lat : 28.6139;
   const lng = typeof reading.lng === 'number' && Number.isFinite(reading.lng) ? reading.lng : 77.209;
   const riskLevel = normalizeRiskLevel(reading.risk_level);
+  const hasAirQualityScore = typeof reading.air_quality_score === 'number' && Number.isFinite(reading.air_quality_score);
 
   return {
     id: `evt-${reading.device_id}-${reading.timestamp}`,
@@ -176,9 +203,9 @@ export function readingToEvent(reading: BackendReadingDto): EnvironmentalEvent {
     date: formattedDate,
     eventType: riskLevel === 'high' ? 'Environmental Warning' : 'Environmental Anomaly',
     riskLevel,
-    pm25: reading.pm25 || 0,
-    pm10: Math.round((reading.pm25 || 0) * 1.4),
-    voc: 120,
+    pm25: typeof reading.pm25 === 'number' && Number.isFinite(reading.pm25) ? reading.pm25 : 0,
+    pm10: typeof reading.pm25 === 'number' && Number.isFinite(reading.pm25) ? Math.round(reading.pm25 * 1.4) : 0,
+    voc: hasAirQualityScore ? reading.air_quality_score! : 120,
     temperature: reading.temp || 24,
     humidity: reading.humidity || 50,
     location: {
@@ -190,9 +217,11 @@ export function readingToEvent(reading: BackendReadingDto): EnvironmentalEvent {
     inhalationDetected: riskLevel === 'high',
     environmentalTrend:
       riskLevel === 'high'
-        ? 'Acute particulate concentration spike logged at coordinate'
+        ? (hasAirQualityScore ? 'Elevated air quality score spike logged at coordinate' : 'Acute particulate concentration spike logged at coordinate')
         : 'Baseline ambient monitoring',
-    notes: `Geospatial observation from device ${reading.device_id}.`,
+    notes: hasAirQualityScore
+      ? `Air quality score ${reading.air_quality_score} logged from device ${reading.device_id}.`
+      : `Geospatial observation from device ${reading.device_id}.`,
   };
 }
 

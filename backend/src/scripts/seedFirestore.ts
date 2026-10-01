@@ -4,6 +4,13 @@ import { getFirestore } from '../config/firebase.js';
 
 export const SEED_DEVICES: DeviceDocument[] = [
   {
+    device_id: 'AG-001',
+    owner: 'airguard-demo',
+    registered_at: '2026-09-01T12:00:00.000Z',
+    lat: 28.6139,
+    lng: 77.209,
+  },
+  {
     device_id: 'DEV-ESP32-001',
     owner: 'dev-owner-1@airguard.local',
     registered_at: '2026-09-01T10:00:00.000Z',
@@ -199,6 +206,47 @@ export const SEED_READINGS: Array<{ data: ReadingDocument; docId: string }> = [
       lat: 28.5358,
       lng: 77.3912,
       timestamp: '2026-09-27T14:30:00.000Z',
+    },
+  },
+
+  // Device AG-001 Telemetry (New Delhi Center area)
+  {
+    docId: 'seed-rdg-015',
+    data: {
+      device_id: 'AG-001',
+      pm25: 16.5,
+      temp: 24.0,
+      humidity: 45,
+      risk_level: 'SAFE',
+      lat: 28.6139,
+      lng: 77.209,
+      timestamp: '2026-09-27T08:00:00.000Z',
+    },
+  },
+  {
+    docId: 'seed-rdg-016',
+    data: {
+      device_id: 'AG-001',
+      pm25: 45.2,
+      temp: 27.5,
+      humidity: 55,
+      risk_level: 'WARNING',
+      lat: 28.615,
+      lng: 77.21,
+      timestamp: '2026-09-27T10:00:00.000Z',
+    },
+  },
+  {
+    docId: 'seed-rdg-017',
+    data: {
+      device_id: 'AG-001',
+      pm25: 92.0,
+      temp: 31.0,
+      humidity: 65,
+      risk_level: 'DANGER',
+      lat: 28.618,
+      lng: 77.213,
+      timestamp: '2026-09-27T12:00:00.000Z',
     },
   },
 ];

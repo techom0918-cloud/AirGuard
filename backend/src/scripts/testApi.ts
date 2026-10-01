@@ -15,6 +15,7 @@ async function request(path: string, options: { method?: string; body?: any } = 
         method,
         headers: {
           'Content-Type': 'application/json',
+          'X-Device-Key': config.deviceApiKey,
           ...(payload ? { 'Content-Length': Buffer.byteLength(payload) } : {}),
         },
       },
@@ -40,6 +41,7 @@ async function request(path: string, options: { method?: string; body?: any } = 
 
 export async function runApiTests(): Promise<void> {
   console.log('--- AIRGUARD REST API TEST SUITE STARTED ---');
+  const server = app.listen(PORT);
 
   let passed = 0;
   let failed = 0;
@@ -87,7 +89,7 @@ export async function runApiTests(): Promise<void> {
         pm25: 35.4,
         temp: 29.5,
         humidity: 61.2,
-        risk_level: 'moderate',
+        risk_level: 'WARNING',
         lat: 28.6139,
         lng: 77.209,
         timestamp: '2026-09-27T15:00:00.000Z',
@@ -109,7 +111,7 @@ export async function runApiTests(): Promise<void> {
       method: 'POST',
       body: {
         device_id: 'DEV-ESP32-003',
-        risk_level: 'high',
+        risk_level: 'DANGER',
         lat: 28.6139,
         lng: 77.209,
         timestamp: '2026-09-27T15:00:00.000Z',
@@ -134,36 +136,44 @@ export async function runApiTests(): Promise<void> {
 
     const invalidRdgPm25 = await request('/api/readings', {
       method: 'POST',
-      body: { device_id: 'DEV-1', pm25: 'NOT_NUM', temp: 20, humidity: 50, risk_level: 'low', lat: 28.5, lng: 77.1, timestamp: '2026-09-27T15:00:00Z' },
+      body: { device_id: 'DEV-ESP32-003', pm25: 'NOT_NUM', temp: 20, humidity: 50, risk_level: 'SAFE', lat: 28.5, lng: 77.1, timestamp: '2026-09-27T15:00:00Z' },
     });
     assert(invalidRdgPm25.status === 400, 'POST /api/readings with non-numeric pm25 returns 400');
 
     const invalidRdgLat = await request('/api/readings', {
       method: 'POST',
-      body: { device_id: 'DEV-1', pm25: 25, temp: 20, humidity: 50, risk_level: 'low', lat: 999.0, lng: 77.1, timestamp: '2026-09-27T15:00:00Z' },
+      body: { device_id: 'DEV-ESP32-003', pm25: 25, temp: 20, humidity: 50, risk_level: 'SAFE', lat: 999.0, lng: 77.1, timestamp: '2026-09-27T15:00:00Z' },
     });
     assert(invalidRdgLat.status === 400, 'POST /api/readings with invalid lat > 90 returns 400');
 
+    const legacyRiskLevel = await request('/api/readings', {
+      method: 'POST',
+      body: { device_id: 'DEV-ESP32-003', pm25: 25, temp: 20, humidity: 50, risk_level: 'low', lat: 28.5, lng: 77.1, timestamp: '2026-09-27T15:00:00Z' },
+    });
+    assert(legacyRiskLevel.status === 400, "POST /api/readings with legacy risk_level 'low' returns 400");
+
     const invalidRiskLevel = await request('/api/readings', {
       method: 'POST',
-      body: { device_id: 'DEV-1', pm25: 25, temp: 20, humidity: 50, risk_level: 'INVALID_LEVEL', lat: 28.5, lng: 77.1, timestamp: '2026-09-27T15:00:00Z' },
+      body: { device_id: 'DEV-ESP32-003', pm25: 25, temp: 20, humidity: 50, risk_level: 'INVALID_LEVEL', lat: 28.5, lng: 77.1, timestamp: '2026-09-27T15:00:00Z' },
     });
     assert(invalidRiskLevel.status === 400, "POST /api/readings with invalid risk_level returns 400");
 
     const invalidLimit = await request('/api/readings/DEV-ESP32-003?limit=99999');
     assert(invalidLimit.status === 400, 'GET /api/readings with limit=99999 returns 400');
 
-    const invalidAlertResolved = await request('/api/alerts', {
+    const invalidAlertRisk = await request('/api/alerts', {
       method: 'POST',
-      body: { device_id: 'DEV-1', risk_level: 'high', lat: 28.5, lng: 77.1, timestamp: '2026-09-27T15:00:00Z', resolved: 'NOT_BOOLEAN' },
+      body: { device_id: 'DEV-ESP32-003', risk_level: 'INVALID', lat: 28.5, lng: 77.1, timestamp: '2026-09-27T15:00:00Z', resolved: false },
     });
-    assert(invalidAlertResolved.status === 400, 'POST /api/alerts with non-boolean resolved returns 400');
+    assert(invalidAlertRisk.status === 400, 'POST /api/alerts with invalid risk_level returns 400');
 
     console.log(`\n--- REST API TEST SUMMARY: ${passed} PASSED, ${failed} FAILED ---`);
     if (failed > 0) process.exit(1);
   } catch (err) {
     console.error('API Test Execution Failed:', err);
     process.exit(1);
+  } finally {
+    server.close();
   }
 }
 

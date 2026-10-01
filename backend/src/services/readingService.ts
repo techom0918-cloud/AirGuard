@@ -23,7 +23,6 @@ export async function saveReading(readingData: ReadingDocument, docId?: string):
 
   const docData: ReadingDocument = {
     device_id: readingData.device_id.trim(),
-    pm25: readingData.pm25,
     temp: readingData.temp,
     humidity: readingData.humidity,
     risk_level: readingData.risk_level,
@@ -34,6 +33,19 @@ export async function saveReading(readingData: ReadingDocument, docId?: string):
         ? readingData.timestamp.toISOString()
         : readingData.timestamp || new Date().toISOString(),
   };
+
+  if (readingData.pm25 !== undefined && readingData.pm25 !== null) {
+    docData.pm25 = readingData.pm25;
+  }
+  if (readingData.mq135_raw !== undefined && readingData.mq135_raw !== null) {
+    docData.mq135_raw = readingData.mq135_raw;
+  }
+  if (readingData.sensor_voltage !== undefined && readingData.sensor_voltage !== null) {
+    docData.sensor_voltage = readingData.sensor_voltage;
+  }
+  if (readingData.air_quality_score !== undefined && readingData.air_quality_score !== null) {
+    docData.air_quality_score = readingData.air_quality_score;
+  }
 
   try {
     if (docId && typeof docId === 'string' && docId.trim() !== '') {

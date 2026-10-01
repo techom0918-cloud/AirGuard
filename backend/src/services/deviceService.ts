@@ -13,6 +13,8 @@ export async function registerDevice(deviceData: DeviceDocument): Promise<Device
       deviceData.registered_at instanceof Date
         ? deviceData.registered_at.toISOString()
         : deviceData.registered_at || new Date().toISOString(),
+    ...(typeof deviceData.lat === 'number' ? { lat: deviceData.lat } : {}),
+    ...(typeof deviceData.lng === 'number' ? { lng: deviceData.lng } : {}),
   };
 
   try {
