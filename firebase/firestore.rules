@@ -1,0 +1,26 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // AirGuard Backend Architecture Security Rules:
+    // All database reads, writes, and queries are brokered through the backend service
+    // using the Firebase Admin SDK, which automatically bypasses these client rules.
+    // Direct client SDK access to database collections is locked down by default.
+
+    match /devices/{deviceId} {
+      allow read, write: if false;
+    }
+
+    match /readings/{readingId} {
+      allow read, write: if false;
+    }
+
+    match /alerts/{alertId} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
